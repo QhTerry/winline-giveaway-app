@@ -388,9 +388,10 @@ body{background:#0A0A0C}
 .app{background:transparent;position:relative}
 .app::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
   background:
-    radial-gradient(560px 480px at 86% -4%, rgba(242,111,30,.26), transparent 60%),
-    radial-gradient(520px 440px at -10% 14%, rgba(242,111,30,.16), transparent 58%),
-    radial-gradient(640px 540px at 50% 118%, rgba(242,111,30,.12), transparent 60%);
+    radial-gradient(600px 520px at 86% -6%, rgba(242,111,30,.34), transparent 60%),
+    radial-gradient(560px 480px at -12% 12%, rgba(242,111,30,.22), transparent 58%),
+    radial-gradient(720px 600px at 50% 120%, rgba(242,111,30,.16), transparent 62%),
+    radial-gradient(820px 640px at 42% 46%, rgba(242,111,30,.06), transparent 70%);
   animation:bgdrift 22s ease-in-out infinite alternate}
 .view{position:relative;z-index:1}
 @keyframes bgdrift{0%{transform:translate3d(-2%,-1%,0) scale(1)}100%{transform:translate3d(2%,2%,0) scale(1.08)}}
@@ -424,7 +425,9 @@ body{background:#0A0A0C}
 .btn-primary{-webkit-backdrop-filter:none;backdrop-filter:none}
 
 /* компактная кнопка в пустых состояниях («Как это работает» была слишком большой) */
-.empty .btn{display:inline-flex;width:auto;max-width:none;margin:14px auto 0;padding:11px 18px;font-size:13px}
+.empty .btn{display:inline-flex;width:auto;max-width:none;margin:16px auto 0;padding:9px 16px;font-size:12px;
+  font-family:var(--font);font-style:normal;text-transform:none;letter-spacing:0;font-weight:700;gap:7px}
+.empty .btn .icon{width:16px;height:16px}
 
 /* fallback если backdrop-filter не поддерживается / выключена прозрачность */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){
@@ -454,3 +457,25 @@ body{background:#0A0A0C}
 #winlist .win:nth-child(4){animation-delay:.22s}
 #winlist .win:nth-child(5){animation-delay:.28s}
 #winlist .win:nth-child(n+6){animation-delay:.34s}
+
+/* ===== Степпер визарда (заполняющаяся линия с кружками) ===== */
+.steps2{position:relative;display:flex;justify-content:space-between;margin:10px 6px 22px}
+.steps2::before{content:"";position:absolute;left:22px;right:22px;top:17px;height:2px;background:var(--stroke)}
+.steps2::after{content:"";position:absolute;left:22px;top:17px;height:2px;border-radius:2px;
+  width:calc((100% - 44px) * var(--progf,0));background:linear-gradient(90deg,var(--brand),var(--brand-300));
+  box-shadow:0 0 10px rgba(242,111,30,.5);transition:width .45s cubic-bezier(.2,.8,.2,1)}
+.steps2 .node{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:7px;width:74px}
+.steps2 .dot{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13.5px;
+  background:var(--surface-2);border:1px solid var(--stroke);color:var(--muted);transition:.3s}
+.steps2 .node.done .dot{background:linear-gradient(135deg,var(--brand),var(--brand-600));border-color:transparent;color:#fff}
+.steps2 .node.cur .dot{border-color:var(--brand);color:#fff;box-shadow:0 0 0 5px var(--brand-soft)}
+.steps2 .dot .icon{width:15px;height:15px;stroke-width:2.4}
+.steps2 .lbl{font-size:10.5px;color:var(--muted-2);white-space:nowrap;transition:.3s}
+.steps2 .node.cur .lbl{color:#fff}.steps2 .node.done .lbl{color:#cfd2d8}
+
+/* ===== Скелетоны загрузки (shimmer) ===== */
+.skel{background:linear-gradient(100deg, rgba(255,255,255,.05) 38%, rgba(255,255,255,.13) 50%, rgba(255,255,255,.05) 62%);
+  background-size:200% 100%;animation:shimmer 1.15s linear infinite;border-radius:12px;border:1px solid var(--stroke)}
+.skel-line{height:14px;margin:10px 0;border-radius:8px;border:0}
+.skel-card{height:140px;margin-bottom:14px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}

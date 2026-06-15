@@ -96,6 +96,15 @@ function push(route){ state.stack.push(route); render(); }
 function pop(){ if(state.stack.length>1){state.stack.pop();render();} }
 backBtn.addEventListener('click',()=>{haptic();pop();});
 
+/* открытие экрана с короткой загрузкой-скелетоном */
+let fxLoading=false;
+function openFx(route){ fxLoading=true; push(route); setTimeout(()=>{ fxLoading=false; const cur=state.stack[state.stack.length-1]; if(cur&&cur.name===route.name) render(); }, 480); }
+function skeleton(kind){
+  const line=w=>`<div class="skel skel-line" style="width:${w}"></div>`;
+  if(kind==='giveaway') return `<div class="skel skel-card"></div>${line('55%')}${line('90%')}${line('80%')}<div style="height:14px"></div><div class="skel" style="height:48px;border-radius:14px;border:0"></div>`;
+  return `${line('45%')}<div class="skel skel-card" style="height:84px"></div>${line('72%')}${line('88%')}${line('60%')}`;
+}
+
 function renderTabbar(){
   tabbar.innerHTML=tabsForRole().map(t=>`<button data-tab="${t.id}" class="${state.tab===t.id?'on':''}">${ico(t.icon)}${t.label}</button>`).join('');
 }
@@ -186,6 +195,7 @@ ROUTES.mine=()=>{
 
 /* ---------- КАРТОЧКА РОЗЫГРЫША (участник) ---------- */
 ROUTES.giveaway=({id})=>{
+  if(fxLoading) return skeleton('giveaway');
   const g=getGA(id); if(!g)return emptyBlock('Розыгрыш не найден','Возможно, он завершён или ссылка устарела.','');
   const entered=MY().entered.includes(id);
   const conds=g.conditions.length?g.conditions.map(c=>{const m=condMeta(c);
@@ -319,6 +329,7 @@ function genWinners(g){const rng=mulberry32(hashStr(g.id+(g.seedNonce||'')));con
   for(let i=0;i<n;i++){let nm;do{nm=NAMES[Math.floor(rng()*NAMES.length)]+'_'+Math.floor(rng()*90+10);}while(used.has(nm));used.add(nm);
     out.push({u:'@'+nm,wl:maskId(rng,4),tg:maskId(rng,4)});}return out;}
 ROUTES.results=({id})=>{
+  if(fxLoading) return skeleton('results');
   const g=getGA(id); if(!g)return emptyBlock('Не найдено');
   const admin=isAdmin();
   const w=genWinners(g); const extra=(g.places||1)-w.length;
@@ -342,6 +353,7 @@ ROUTES.results=({id})=>{
 
 /* ---------- АДМИН: АНАЛИТИКА (только админ) ---------- */
 ROUTES.analytics=({id})=>{
+  if(fxLoading) return skeleton('analytics');
   if(!isAdmin()) return emptyBlock('Недоступно','Аналитика доступна только администратору.','');
   const g=getGA(id); if(!g)return emptyBlock('Не найдено');
   const rng=mulberry32(hashStr(g.id+'a'));
@@ -397,47 +409,70 @@ ROUTES.published=({msg})=>`<div class="center"><div class="burst">${ico('i-check
 let draft=null;
 function freshDraft(){return {text:'',image:null,button:'УЧАСТВОВАТЬ',conditions:[],places:'',pubChannels:[MAIN_CHANNEL],dateStr:'',endsAt:Date.now()+3*DAY,editId:null};}
 
+let cstep=1;
+function stepper(cur){
+  const labels=['Оформление','Условия','Параметры','Итог'];
+  const total=labels.length, progf=((cur-1)/(total-1)).toFixed(3);
+  const nodes=labels.map((l,i)=>{const n=i+1;const cls=n<cur?'done':n===cur?'cur':'';
+    return `<div class="node ${cls}"><div class="dot">${n<cur?ico('i-check','sm'):n}</div><div class="lbl">${l}</div></div>`;}).join('');
+  return `<div class="steps2" style="--progf:${progf}">${nodes}</div>`;
+}
+function summaryHtml(){
+  const d=draft, cond=d.conditions.map(c=>condMeta(c).title).join(', ')||'без условий';
+  const t=(d.text||'').replace(/\[([^\]]+)\]\([^)]*\)/g,'$1');
+  const rows=[['Текст',(t||'—').slice(0,42)+(t.length>42?'…':'')],['Кнопка',d.button],['Условия',cond],
+    ['Мест',d.places||'—'],['Каналы',d.pubChannels.join(', ')||'—'],['Итоги',d.dateStr||'через 3 дня']];
+  return `<div class="summary">${rows.map(r=>`<div class="row"><span>${r[0]}</span><b>${esc(r[1])}</b></div>`).join('')}</div>`;
+}
 ROUTES.constructor=()=>{
   if(!draft) draft=freshDraft();
-  return `<div class="h1">${draft.editId?'Редактирование':'Новый розыгрыш'}</div>
-    <div class="lead">Соберите розыгрыш из блоков. Обязательных условий нет - добавляйте нужные.</div>
-
-    <div class="sect">Оформление</div>
-    <div class="upload ${draft.image?'has':''}" data-act="pick-image">${ico('i-img')}<span id="upLabel">${draft.image?'Изображение выбрано':'Выбрать обложку'}</span></div>
-    <div class="field" style="margin-top:12px"><label>Текст розыгрыша</label>
-      <textarea class="textarea" data-model="text" placeholder="Разыгрываем iPhone 17 Pro. Подробнее - на сайте.">${esc(draft.text)}</textarea>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <button class="btn btn-ghost btn-sm" data-act="add-link" style="width:auto">${ico('i-link','sm')}Ссылка</button></div>
-      <div class="hint">${ico('i-info','sm')}Ссылки: выделяются автоматически или через кнопку. Премиум-эмодзи и форматирование Telegram добавляются при постинге через бота.</div></div>
-    <div class="field"><label>Текст кнопки</label>
-      <div class="chips" id="btnChips">
-        ${['УЧАСТВОВАТЬ','ПРИНЯТЬ УЧАСТИЕ','УЧАСТВУЮ'].map(b=>`<div class="chip ${draft.button===b?'sel':''}" data-act="pick-btn:${b}">${b}</div>`).join('')}
-      </div>
-      <input class="input" style="margin-top:8px" data-model="button" value="${esc(draft.button)}"></div>
-
-    <div class="sect">Условия участия <span class="badge" id="condBadge">${draft.conditions.length}</span></div>
-    <div id="condHost">${renderCondEditors()}</div>
-    <div class="builder-add">
-      <div class="add-cond" data-act="add-cond:sub"><div class="ci">${ico('i-mega','sm')}</div>Подписка на канал<span class="plus">${ico('i-plus','sm')}</span></div>
-      <div class="add-cond" data-act="add-cond:promo"><div class="ci">${ico('i-ticket','sm')}</div>Регистрация по промокоду<span class="plus">${ico('i-plus','sm')}</span></div>
-      <div class="add-cond" data-act="add-cond:bet"><div class="ci">${ico('i-coin','sm')}</div>Ставка / депозит<span class="plus">${ico('i-plus','sm')}</span></div>
-    </div>
-
-    <div class="sect">Параметры</div>
-    <div class="field"><label>Количество мест (победителей)</label><input class="input" type="number" inputmode="numeric" data-model="places" value="${esc(draft.places)}" placeholder="50"></div>
-    <div class="field"><label>Каналы публикации</label>
-      <div class="chips" id="pubChips">${pubChipsHtml()}</div>
-      <div style="display:flex;gap:8px;margin-top:8px"><input class="input" id="pubNew" placeholder="@username или ссылка на канал"><button class="btn btn-ghost icon-btn btn-sm" data-act="add-pub">Добавить</button></div>
-      <div class="hint">${ico('i-info','sm')}Бот должен быть админом канала. Показаны недавно использованные.</div></div>
-    <div class="field"><label>Дата и время итогов</label><input class="input" data-model="dateStr" value="${esc(draft.dateStr)}" placeholder="01.07.26 18:00"></div>
-    <div class="btn-row" style="margin-top:0"><button class="btn btn-ghost btn-sm" data-act="pub-now">${ico('i-bolt','sm')}Сейчас</button></div>
-
-    <div class="sect">Предпросмотр</div>${renderPreview()}
-
-    <button class="btn btn-primary" style="margin-top:8px" data-act="publish">${ico('i-bolt')}Опубликовать</button>
-    <div style="height:10px"></div>
-    <button class="btn btn-ghost" data-act="save-draft">${ico('i-edit')}Сохранить черновик</button>`;
+  const head=`<div class="h1">${draft.editId?'Редактирование':'Новый розыгрыш'}</div>${stepper(cstep)}`;
+  let body='';
+  if(cstep===1){
+    body=`<div class="sect">Оформление</div>
+      <div class="upload ${draft.image?'has':''}" data-act="pick-image">${ico('i-img')}<span id="upLabel">${draft.image?'Изображение выбрано':'Выбрать обложку'}</span></div>
+      <div class="field" style="margin-top:12px"><label>Текст розыгрыша</label>
+        <textarea class="textarea" data-model="text" placeholder="Разыгрываем iPhone 17 Pro. Подробнее на сайте.">${esc(draft.text)}</textarea>
+        <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-act="add-link" style="width:auto">${ico('i-link','sm')}Вставить ссылку</button></div>
+        <div class="hint">${ico('i-info','sm')}Премиум-эмодзи и форматирование Telegram добавятся при постинге через бота.</div></div>
+      <div class="field"><label>Текст кнопки</label>
+        <div class="chips" id="btnChips">${['УЧАСТВОВАТЬ','ПРИНЯТЬ УЧАСТИЕ','УЧАСТВУЮ'].map(b=>`<div class="chip ${draft.button===b?'sel':''}" data-act="pick-btn:${b}">${b}</div>`).join('')}</div>
+        <input class="input" style="margin-top:8px" data-model="button" value="${esc(draft.button)}"></div>`;
+  } else if(cstep===2){
+    body=`<div class="sect">Условия участия <span class="badge" id="condBadge">${draft.conditions.length}</span></div>
+      <div class="lead" style="margin:-2px 0 12px">Обязательных нет. Добавляйте нужные блоки.</div>
+      <div id="condHost">${renderCondEditors()}</div>
+      <div class="builder-add">
+        <div class="add-cond" data-act="add-cond:sub"><div class="ci">${ico('i-mega','sm')}</div>Подписка на канал<span class="plus">${ico('i-plus','sm')}</span></div>
+        <div class="add-cond" data-act="add-cond:promo"><div class="ci">${ico('i-ticket','sm')}</div>Регистрация по промокоду<span class="plus">${ico('i-plus','sm')}</span></div>
+        <div class="add-cond" data-act="add-cond:bet"><div class="ci">${ico('i-coin','sm')}</div>Ставка / депозит<span class="plus">${ico('i-plus','sm')}</span></div>
+      </div>`;
+  } else if(cstep===3){
+    body=`<div class="sect">Параметры</div>
+      <div class="field"><label>Количество мест (победителей)</label><input class="input" type="number" inputmode="numeric" data-model="places" value="${esc(draft.places)}" placeholder="50"></div>
+      <div class="field"><label>Каналы публикации</label>
+        <div class="chips" id="pubChips">${pubChipsHtml()}</div>
+        <div style="display:flex;gap:8px;margin-top:8px"><input class="input" id="pubNew" placeholder="@username или ссылка"><button class="btn btn-ghost icon-btn btn-sm" data-act="add-pub">＋</button></div>
+        <div class="hint">${ico('i-info','sm')}Бот должен быть админом канала. Показаны недавние.</div></div>
+      <div class="field"><label>Дата и время итогов</label><input class="input" data-model="dateStr" value="${esc(draft.dateStr)}" placeholder="01.07.26 18:00">
+        <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-act="pub-now" style="width:auto">${ico('i-bolt','sm')}Подвести сейчас</button></div></div>`;
+  } else {
+    body=`<div class="sect">Предпросмотр</div>${renderPreview()}
+      <div class="sect">Проверьте перед публикацией</div>${summaryHtml()}
+      <div style="height:8px"></div>
+      <button class="btn btn-ghost" data-act="save-draft">${ico('i-edit')}Сохранить как черновик</button>`;
+  }
+  const nav=`<div class="btn-row" style="margin-top:18px">
+    ${cstep>1?`<button class="btn btn-ghost" data-act="cstep-back">${ico('i-back')}Назад</button>`:`<button class="btn btn-ghost" data-act="go-admin">Отмена</button>`}
+    ${cstep<4?`<button class="btn btn-primary" data-act="cstep-next">Далее${ico('i-next')}</button>`:`<button class="btn btn-primary" data-act="publish">${ico('i-bolt')}Опубликовать</button>`}</div>`;
+  return head+body+nav;
 };
+function validateStep(n){
+  if(n===1 && !draft.text.trim()){ ping('Добавьте текст розыгрыша'); return false; }
+  if(n===3){ if(!draft.places||+draft.places<1){ ping('Укажите количество мест'); return false; }
+    if(!draft.pubChannels.length){ ping('Выберите канал публикации'); return false; } }
+  return true;
+}
 function pubChipsHtml(){
   const opts=Array.from(new Set([...draft.pubChannels, ...recent()]));
   return opts.map(c=>`<div class="chip ${draft.pubChannels.includes(c)?'sel':''}" data-act="toggle-pub:${c}">${ico('i-mega','sm')}${esc(c)}</div>`).join('');
@@ -485,12 +520,14 @@ function handle(act,arg,node){
   haptic();
   switch(act){
     case 'start': localStorage.setItem(K_ONB,'1'); setTab('mine'); break;
-    case 'open-ga': push({name:'giveaway',params:{id:arg}}); break;
+    case 'open-ga': openFx({name:'giveaway',params:{id:arg}}); break;
     case 'open-win': push({name:'win',params:{id:arg}}); break;
-    case 'preview': push({name:'giveaway',params:{id:arg}}); break;
+    case 'preview': openFx({name:'giveaway',params:{id:arg}}); break;
     case 'open-manage': push({name:'manage',params:{id:arg}}); break;
-    case 'open-results': push({name:'results',params:{id:arg}}); break;
-    case 'open-analytics': push({name:'analytics',params:{id:arg}}); break;
+    case 'open-results': openFx({name:'results',params:{id:arg}}); break;
+    case 'open-analytics': openFx({name:'analytics',params:{id:arg}}); break;
+    case 'cstep-next': if(validateStep(cstep)){ cstep=Math.min(4,cstep+1); render(); } break;
+    case 'cstep-back': cstep=Math.max(1,cstep-1); render(); break;
     case 'open-team': push({name:'team'}); break;
     case 'rules': push({name:'rules'}); break;
     case 'open-post': { const g=getGA(arg); const u=g&&(g.postUrl||('https://t.me/'+((g.pubChannels&&g.pubChannels[0]||'').replace('@','')))); if(u)openTg(u); ping('Открываем пост в канале'); break; }
@@ -503,7 +540,7 @@ function handle(act,arg,node){
     case 'participate': participate(arg); break;
     case 'claim': ping('Заявка на приз отправлена'); break;
 
-    case 'create': draft=freshDraft(); push({name:'constructor'}); break;
+    case 'create': draft=freshDraft(); cstep=1; push({name:'constructor'}); break;
     case 'edit': editGiveaway(arg); break;
     case 'add-link': linkSheet(); break;
     case 'pick-image': $('#fileInput').click(); break;
@@ -581,12 +618,12 @@ function editGiveaway(id){
   const g=getGA(id); if(!g)return;
   draft=freshDraft(); draft.text=g.text;draft.image=g.image;draft.button=g.button;
   draft.conditions=JSON.parse(JSON.stringify(g.conditions));draft.places=g.places;draft.pubChannels=g.pubChannels.slice();
-  draft.dateStr=dstr(g.endsAt);draft.endsAt=g.endsAt;draft.editId=id; push({name:'constructor'});
+  draft.dateStr=dstr(g.endsAt);draft.endsAt=g.endsAt;draft.editId=id; cstep=1; push({name:'constructor'});
 }
 function changeStatus(id,st,msg){const a=GA();const g=a.find(x=>x.id===id);if(g){g.status=st;setGA(a);}ping(msg);render();}
 function duplicate(id){const g=getGA(id);if(!g)return;draft=freshDraft();draft.text=g.text;draft.image=g.image;draft.button=g.button;
   draft.conditions=JSON.parse(JSON.stringify(g.conditions));draft.places=g.places;draft.pubChannels=g.pubChannels.slice();
-  push({name:'constructor'});ping('Создана копия - отредактируйте и опубликуйте');}
+  cstep=1; push({name:'constructor'});ping('Создана копия - отредактируйте и опубликуйте');}
 function crosspost(id){
   const opts=Array.from(new Set([MAIN_CHANNEL,...recent()]));
   openSheet(`<h3>Кросспостинг</h3><p>Выберите каналы, где наш бот админ - туда уйдёт карточка розыгрыша.</p>
