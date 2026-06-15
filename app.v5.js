@@ -55,6 +55,13 @@ const isAdmin=()=>role()!=='user';
 const setRole=r=>localStorage.setItem(K_ROLE,r);
 const link=()=>lj(K_LINK,{linked:false,winlineId:''});
 const recent=()=>lj(K_RECENT,[MAIN_CHANNEL]);
+/* данные Telegram-аккаунта (имя/юзернейм) из WebApp */
+function tgUser(){
+  try{ const u=tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user;
+    if(u) return { name:[u.first_name,u.last_name].filter(Boolean).join(' ')||u.username||'Пользователь', uname:u.username?('@'+u.username):'' }; }
+  catch(e){}
+  return { name:'Гость', uname:'' };
+}
 function addRecent(chs){ let r=recent(); (chs||[]).forEach(c=>{ c=(c||'').trim(); if(!c)return; r=r.filter(x=>x!==c); r.unshift(c); }); sj(K_RECENT,r.slice(0,8)); }
 function normChan(v){ v=(v||'').trim(); if(!v)return ''; if(/^https?:\/\/t\.me\//i.test(v)){ v='@'+v.replace(/^https?:\/\/t\.me\//i,'').replace(/\/$/,''); } if(!v.startsWith('@')&&!/^https?:/i.test(v)) v='@'+v; return v; }
 
@@ -238,8 +245,9 @@ ROUTES.profile=()=>{
         <button class="btn btn-ghost btn-sm" data-act="unlink" style="width:auto">Отвязать</button></div>`
     :`<div class="prow"><div class="ci">${ico('i-link')}</div><div class="px"><b>Winline не привязан</b><span>Войдите, чтобы участвовать</span></div>
         <button class="btn btn-primary btn-sm" data-act="link" style="width:auto">Привязать</button></div>`;
+  const u=tgUser();
   return `<div class="h1">Профиль</div>
-    <div class="prow"><div class="ci">${ico('i-user')}</div><div class="px"><b>Тёма</b><span>Telegram @artem</span></div></div>
+    <div class="prow"><div class="ci">${ico('i-user')}</div><div class="px"><b>${esc(u.name)}</b><span>${u.uname?('Telegram '+esc(u.uname)):'Telegram'}</span></div></div>
     ${linkRow}
     <div class="prow link-row" data-act="rules"><div class="ci">${ico('i-info')}</div><div class="px"><b>Правила и FAQ</b><span>Как участвовать и получать призы</span></div><span class="arr">${ico('i-next')}</span></div>
     ${isAdmin()?`<div class="prow"><div class="ci">${ico('i-shield')}</div><div class="px"><b>Доступ: ${ROLE_LABEL[role()]}</b><span>Выдан по вашему Telegram ID</span></div></div>`:''}

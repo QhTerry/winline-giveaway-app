@@ -372,3 +372,63 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font
   *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
   .timer.hot{animation:none}
 }
+
+/* ============================================================ GLASS THEME — тёмное стекло (бренд без изменений) ============================================================ */
+:root{
+  --stroke: rgba(255,255,255,.10);
+  --stroke-2: rgba(255,255,255,.18);
+  --glass-1: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.025));
+  --glass-2: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+  --glass-blur: blur(18px) saturate(140%);
+  --glass-edge: inset 0 1px 0 rgba(255,255,255,.07);
+  --glass-shadow: 0 18px 44px -26px rgba(0,0,0,.9);
+}
+/* фон под стекло: глубокий графит + мягкие оранжевые свечения */
+.app{
+  background:
+    radial-gradient(820px 460px at 90% -6%, rgba(242,111,30,.20), transparent 58%),
+    radial-gradient(620px 420px at -12% 10%, rgba(242,111,30,.12), transparent 55%),
+    radial-gradient(720px 560px at 50% 116%, rgba(242,111,30,.07), transparent 60%),
+    #0A0A0C;
+}
+/* стеклянные поверхности */
+.card,.gcard,.ga,.kpi,.prow,.act-tile,.cond,.preview,.mini-card,.faq,.cond-edit{
+  background:var(--glass-1);
+  -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
+  border:1px solid var(--stroke);
+  box-shadow:var(--glass-shadow), var(--glass-edge);
+}
+.card:hover,.gcard:hover,.ga:hover,.act-tile:hover,.mini-card:hover,.prow.link-row:hover{border-color:rgba(242,111,30,.55)}
+/* иконные «фишки» — лёгкое стекло */
+.cond .ci,.prow .ci,.act-tile .ci,.onb-feat .ci,.add-cond .ci{background:rgba(255,255,255,.06);border:1px solid var(--stroke)}
+/* шапка и таб-бар — сильнее блюр */
+.hdr{background:rgba(12,12,14,.55);-webkit-backdrop-filter:blur(22px) saturate(140%);backdrop-filter:blur(22px) saturate(140%)}
+.tabbar{background:rgba(12,12,14,.6);-webkit-backdrop-filter:blur(22px) saturate(140%);backdrop-filter:blur(22px) saturate(140%)}
+/* поля, чипы, ghost-кнопки, сегменты — стекло */
+.input,.textarea,select{background:var(--glass-1);border:1px solid var(--stroke);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)}
+.input:focus,.textarea:focus,select:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+.btn-ghost{background:var(--glass-2);border:1px solid var(--stroke);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)}
+.btn-ghost:hover{border-color:rgba(242,111,30,.55)}
+.chip{background:var(--glass-1);border:1px solid var(--stroke)}
+.seg{background:rgba(255,255,255,.05);border:1px solid var(--stroke)}
+.pill.d{background:rgba(255,255,255,.06)}
+.upload{border-color:var(--stroke)}
+/* модалка и тосты */
+.modal{background:rgba(0,0,0,.5)}
+.sheet{background:linear-gradient(180deg, rgba(30,30,36,.85), rgba(18,18,22,.94));-webkit-backdrop-filter:blur(26px) saturate(140%);backdrop-filter:blur(26px) saturate(140%);border:1px solid var(--stroke-2)}
+.toast{background:rgba(30,30,36,.8);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}
+/* primary остаётся плотным брендовым акцентом */
+.btn-primary{-webkit-backdrop-filter:none;backdrop-filter:none}
+
+/* компактная кнопка в пустых состояниях («Как это работает» была слишком большой) */
+.empty .btn{display:inline-flex;width:auto;max-width:none;margin:14px auto 0;padding:11px 18px;font-size:13px}
+
+/* fallback если backdrop-filter не поддерживается / выключена прозрачность */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){
+  .card,.gcard,.ga,.kpi,.prow,.act-tile,.cond,.preview,.mini-card,.faq,.cond-edit,.input,.textarea,select,.btn-ghost,.sheet{background:#16161c}
+  .hdr,.tabbar{background:#0c0c0e}
+}
+@media (prefers-reduced-transparency: reduce){
+  .card,.gcard,.ga,.kpi,.prow,.act-tile,.cond,.preview,.mini-card,.faq,.cond-edit,.input,.textarea,select,.btn-ghost{-webkit-backdrop-filter:none;backdrop-filter:none;background:#16161c}
+  .hdr,.tabbar,.sheet,.toast{-webkit-backdrop-filter:none;backdrop-filter:none;background:#0c0c0e}
+}
