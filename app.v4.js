@@ -1,13 +1,15 @@
 /* ============================================================
-   WINLINE GIVEAWAY — mini app (role-aware SPA) · v3
-   Демо: данные в localStorage. Точки бэкенда помечены TODO:BACKEND.
-   Роли: user / admin / super (переключается в Профиле для демо).
+   WINLINE GIVEAWAY — mini app (role-aware SPA) · v4
+   Без общей ленты: участник видит только свои участия + профиль,
+   розыгрыш открывается по deep-link из поста в канале или из «Моих».
+   Демо: localStorage. Бэкенд — метки TODO:BACKEND. Сервис стартует пустым.
    ============================================================ */
 'use strict';
 
 /* ---------- Telegram ---------- */
 const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 function haptic(t='light'){ try{ tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred(t); }catch(e){} }
+function openTg(url){ if(!url)return; try{ if(tg&&tg.openTelegramLink){tg.openTelegramLink(url);return;} }catch(e){} try{window.open(url,'_blank');}catch(e){} }
 if (tg){ try{ tg.ready(); tg.expand(); tg.setHeaderColor('#0C0C0E'); tg.setBackgroundColor('#0C0C0E'); tg.BackButton.onClick(()=>pop()); }catch(e){} }
 
 /* ---------- helpers ---------- */
@@ -23,40 +25,25 @@ function dstr(ms){const d=new Date(ms),p=n=>String(n).padStart(2,'0');return `${
 function timeLeft(ms){let s=Math.max(0,Math.floor((ms-Date.now())/1000));const d=Math.floor(s/86400);s%=86400;const h=Math.floor(s/3600);s%=3600;const m=Math.floor(s/60);const ss=s%60;const p=n=>String(n).padStart(2,'0');return d>0?`${d}д ${p(h)}:${p(m)}:${p(ss)}`:`${p(h)}:${p(m)}:${p(ss)}`;}
 
 /* ---------- storage ---------- */
-const K_GA='wl_giveaways_v2', K_MY='wl_my_v1', K_ROLE='wl_role', K_LINK='wl_link', K_ADMINS='wl_admins', K_ONB='wl_onboarded';
+const K_GA='wl_giveaways_v2', K_MY='wl_my_v1', K_ROLE='wl_role', K_LINK='wl_link', K_ADMINS='wl_admins', K_ONB='wl_onboarded', K_SEED='wl_seed_v4';
 const lj=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}};
 const sj=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const DAY=864e5, HR=36e5;
 function seed(){
-  if(lj(K_GA,null)) return;
-  const now=Date.now();
-  sj(K_GA,[
-    {id:'GA-2050',title:'iPhone 17 Pro',prize:'iPhone 17 Pro',prizeType:'Девайс',coverLabel:'iPhone 17 Pro',
-     text:'Разыгрываем iPhone 17 Pro среди подписчиков. Выполни условия и участвуй.',button:'УЧАСТВОВАТЬ',
-     conditions:[{type:'sub',channels:['@winline_official']},{type:'bet',amount:1000,category:'Все события',link:''}],
-     places:1,pubChannels:['@winline_official'],endsAt:now+5*DAY,createdAt:today(),status:'active',owner:'me'},
-    {id:'GA-2055',title:'Мерч Winline',prize:'Комплект мерча ×3',prizeType:'Мерч',coverLabel:'Мерч Winline ×3',
-     text:'Дарим фирменный мерч Winline. Три комплекта победителям.',button:'УЧАСТВУЮ',
-     conditions:[{type:'sub',channels:['@winline_official','@winline_esports']},{type:'promo',code:'MERCH'}],
-     places:3,pubChannels:['@winline_official'],endsAt:now+2*DAY,createdAt:today(),status:'active',owner:'me'},
-    {id:'GA-2060',title:'Билеты на матч',prize:'2 билета на матч',prizeType:'Билеты',coverLabel:'Билеты на матч',
-     text:'Два билета на топовый матч. Сделай ставку и участвуй.',button:'ПРИНЯТЬ УЧАСТИЕ',
-     conditions:[{type:'sub',channels:['@winline_sport']},{type:'bet',amount:500,category:'Киберспорт',link:''},{type:'promo',code:'MATCH'}],
-     places:5,pubChannels:['@winline_sport'],endsAt:now+12*HR,createdAt:today(),status:'active',owner:'me'},
-    {id:'GA-2041',title:'Розыгрыш 50 000 ₽',prize:'50 000 ₽ фрибетом',prizeType:'Фрибет',coverLabel:'50 000 ₽',
-     text:'Разыгрываем 50 000 ₽ фрибетом среди подписчиков.',button:'УЧАСТВОВАТЬ',
-     conditions:[{type:'sub',channels:['@winline_official','@winline_esports']},{type:'promo',code:'ESPORTS2026'},{type:'bet',amount:500,category:'Киберспорт',link:''}],
-     places:50,pubChannels:['@winline_official'],endsAt:now-2*DAY,createdAt:'10.06.26',status:'finished',owner:'me'}
-  ]);
-  sj(K_MY,{entered:['GA-2050','GA-2060'],won:['GA-2041']});
-  sj(K_LINK,{linked:true,winlineId:'WL-7421902'});
-  sj(K_ADMINS,[{u:'@artem',role:'Супер-админ'},{u:'@manager_cs',role:'Админ'},{u:'@smm_winline',role:'Админ'}]);
+  if(localStorage.getItem(K_SEED)) return;
+  // Сервис стартует пустым: розыгрышей нет. Конфиг команды и состояние привязки — дефолты.
+  if(lj(K_GA,null)==null) sj(K_GA,[]);
+  if(lj(K_MY,null)==null) sj(K_MY,{entered:[],won:[]});
+  if(lj(K_LINK,null)==null) sj(K_LINK,{linked:false,winlineId:''});
+  if(lj(K_ADMINS,null)==null) sj(K_ADMINS,[{u:'@artem',role:'Супер-админ'}]);
+  localStorage.setItem(K_SEED,'1');
 }
 const GA=()=>lj(K_GA,[]);
 const setGA=a=>sj(K_GA,a);
 const getGA=id=>GA().find(g=>g.id===id);
 const MY=()=>lj(K_MY,{entered:[],won:[]});
 const role=()=>localStorage.getItem(K_ROLE)||'user';
+const isAdmin=()=>role()!=='user';
 const setRole=r=>localStorage.setItem(K_ROLE,r);
 const link=()=>lj(K_LINK,{linked:false,winlineId:''});
 
@@ -69,14 +56,14 @@ function condMeta(c){
 }
 
 /* ============================================================ НАВИГАЦИЯ ============================================================ */
-const view=$('#view'), backBtn=$('#backBtn'), tabbar=$('#tabbar');
+const view=$('#view'), backBtn=$('#backBtn'), tabbar=$('#tabbar'), hdr=$('.hdr');
 const ROLE_LABEL={user:'Участник',admin:'Админ',super:'Супер-админ'};
 
-let state={tab:'feed', stack:[{name:'feed'}], feedFilter:'Все'};
+let state={tab:'mine', stack:[{name:'mine'}]};
 
 function tabsForRole(){
-  const t=[{id:'feed',icon:'i-gift',label:'Лента'},{id:'mine',icon:'i-ticket',label:'Мои'}];
-  if(role()!=='user') t.push({id:'admin',icon:'i-grid',label:'Админка'});
+  const t=[{id:'mine',icon:'i-ticket',label:'Мои'}];
+  if(isAdmin()) t.push({id:'admin',icon:'i-grid',label:'Админка'});
   t.push({id:'profile',icon:'i-user',label:'Профиль'});
   return t;
 }
@@ -94,6 +81,7 @@ function render(){
   const fn=ROUTES[route.name]; if(!fn)return;
   view.innerHTML=fn(route.params||{});
   const onboard = route.name==='onboarding';
+  if(hdr) hdr.style.display = onboard?'none':'flex';
   tabbar.style.display = onboard?'none':'flex';
   const showBack=state.stack.length>1 && !onboard;
   backBtn.classList.toggle('show',showBack);
@@ -102,7 +90,7 @@ function render(){
   view.scrollTop=0; window.scrollTo(0,0);
 }
 
-/* делегирование кликов */
+/* делегирование */
 document.addEventListener('click',e=>{
   const tabBtn=e.target.closest('[data-tab]');
   if(tabBtn){haptic();setTab(tabBtn.dataset.tab);return;}
@@ -132,77 +120,16 @@ ROUTES.onboarding=()=>{
     <div class="onb-hero"><img src="logo.svg" class="onb-logo" alt="Winline"><div class="onb-badge">GIVEAWAY</div></div>
     <div class="onb-content">
       <div class="h1" style="font-size:30px">Розыгрыши Winline</div>
-      <p class="lead">Участвуй, выполняй условия и забирай призы — фрибеты, девайсы, мерч и билеты. Всё в одном приложении.</p>
-      ${feat('i-gift','Призы каждую неделю','Новые розыгрыши регулярно')}
+      <p class="lead">Участвуй в розыгрышах из каналов Winline, выполняй условия и забирай призы — фрибеты, девайсы, мерч и билеты.</p>
       ${feat('i-shield','Безопасно через Winline','Привязка аккаунта по API')}
       ${feat('i-trophy','Честный розыгрыш','Случайный выбор с проверкой результата')}
+      ${feat('i-ticket','Всё в «Моих»','Твои участия и выигрыши в одном месте')}
     </div>
     <div class="onb-cta"><button class="btn btn-primary" data-act="start">Начать</button></div>
   </div>`;
 };
 
-/* ---------- ЛЕНТА ---------- */
-ROUTES.feed=()=>{
-  const active=GA().filter(g=>g.status==='active').sort((a,b)=>a.endsAt-b.endsAt);
-  const types=['Все',...Array.from(new Set(active.map(g=>g.prizeType)))];
-  if(!types.includes(state.feedFilter)) state.feedFilter='Все';
-  const list=state.feedFilter==='Все'?active:active.filter(g=>g.prizeType===state.feedFilter);
-
-  const myActive=MY().entered.map(getGA).filter(g=>g&&g.status==='active');
-  const strip=myActive.length?`<div class="sect">Мои активные <span class="badge">${myActive.length}</span></div>
-    <div class="hscroll mini-strip">${myActive.map(g=>`<div class="mini-card" data-act="open-ga:${g.id}">
-      <div class="mini-top">${ico('i-clock','sm')}<span data-ends="${g.endsAt}">${timeLeft(g.endsAt)}</span></div>
-      <div class="mini-title">${esc(g.title)}</div></div>`).join('')}</div>`:'';
-
-  const filters=`<div class="hscroll filters">${types.map(t=>`<div class="chip ${state.feedFilter===t?'sel':''}" data-act="filter:${t}">${esc(t)}</div>`).join('')}</div>`;
-
-  const cards=list.map(g=>{
-    const hot=(g.endsAt-Date.now())<DAY;
-    const conds=g.conditions.map(c=>`<span class="pill d cond-mini">${ico(condMeta(c).icon,'sm')}</span>`).join('');
-    const cover=g.image?`<img src="${g.image}" alt=""><div class="veil"></div>`:'';
-    return `<div class="gcard" data-act="open-ga:${g.id}">
-      <div class="gcover">${cover}<div class="timer ${hot?'hot':''}">${ico('i-clock','sm')}<span data-ends="${g.endsAt}">${timeLeft(g.endsAt)}</span></div>
-        <div class="ct">${esc(g.coverLabel||g.title)}</div></div>
-      <div class="gbody"><h3>${esc(g.title)}</h3>
-        <div class="gmeta"><span class="pill o">${ico('i-trophy','sm')}${esc(g.prizeType||'Приз')}</span>
-          <span class="pill d">${ico('i-users','sm')}${g.places} ${plural(g.places,'место','места','мест')}</span>${conds}</div>
-        <div class="gcta"><button class="btn btn-primary btn-sm" data-act="open-ga:${g.id}">${esc(g.button)}</button></div>
-      </div></div>`;
-  }).join('');
-
-  return `<div class="h1">Розыгрыши</div>
-    ${strip}
-    <div class="sect">Активные ${active.length?`<span class="badge">${active.length}</span>`:''}</div>
-    ${filters}
-    ${list.length?`<div class="feed-list">${cards}</div>`:emptyBlock('В этой категории пока пусто','',`<button class="btn btn-ghost" data-act="filter:Все">Показать все</button>`)}`;
-};
-
-/* ---------- КАРТОЧКА РОЗЫГРЫША ---------- */
-ROUTES.giveaway=({id})=>{
-  const g=getGA(id); if(!g)return emptyBlock('Розыгрыш не найден');
-  const entered=MY().entered.includes(id);
-  const conds=g.conditions.map(c=>{const m=condMeta(c);
-    return `<div class="cond ${entered?'ok':'no'}"><div class="ci">${ico(m.icon)}</div>
-      <div class="cx"><b>${esc(m.title)}</b><span>${esc(m.sub)}</span></div>
-      <div class="st">${entered?ico('i-checkc'):ico('i-next','sm')}</div></div>`;}).join('');
-  const cover=g.image?`<img src="${g.image}" alt=""><div class="veil"></div>`:'';
-  const live=g.status==='active'; const hot=live&&(g.endsAt-Date.now())<DAY;
-  return `<div class="gcover detail">${cover}
-      <div class="timer ${hot?'hot':''}">${ico('i-clock','sm')}<span data-ends="${g.endsAt}">${live?timeLeft(g.endsAt):'завершён'}</span></div>
-      <div class="ct">${esc(g.coverLabel||g.title)}</div></div>
-    <div class="h1">${esc(g.title)}</div>
-    <div class="gmeta"><span class="pill o">${ico('i-trophy','sm')}${esc(g.prize)}</span>
-      <span class="pill d">${ico('i-users','sm')}${g.places} ${plural(g.places,'место','места','мест')}</span></div>
-    <p class="lead" style="margin-top:12px">${esc(g.text)}</p>
-    <div class="sect">Условия участия</div>${conds}
-    ${live?(entered
-      ?`<div class="card okcard">${ico('i-checkc')}<span>Вы участвуете</span></div>`
-      :`<button class="btn btn-primary cta-fixed" data-act="participate:${id}">${esc(g.button)}</button>`)
-      :`<div class="card" style="text-align:center;color:var(--muted)">Розыгрыш завершён</div>
-        <button class="btn btn-ghost" style="margin-top:10px" data-act="open-results:${id}">${ico('i-trophy')}Смотреть итоги</button>`}`;
-};
-
-/* ---------- МОИ ---------- */
+/* ---------- МОИ (домашний экран участника) ---------- */
 let mineSeg='entered';
 ROUTES.mine=()=>{
   const my=MY();
@@ -212,23 +139,77 @@ ROUTES.mine=()=>{
   if(mineSeg==='entered'){
     const items=my.entered.map(getGA).filter(Boolean);
     body=items.length?items.map(g=>{
-      const done=g.conditions.length;
-      const st=g.status==='active'?`<span class="pill o">● идёт</span>`:`<span class="pill g">завершён</span>`;
+      const done=g.conditions.length, live=g.status==='active';
+      const st=live?`<span class="pill o">● идёт</span>`:`<span class="pill g">завершён</span>`;
+      const right=live?`<span class="mono" style="color:var(--brand-300);font-size:11.5px" data-ends="${g.endsAt}">${timeLeft(g.endsAt)}</span>`:'';
       return `<div class="ga" data-act="open-ga:${g.id}"><div class="thumb">${ico('i-ticket')}</div>
         <div class="meta"><h6>${esc(g.title)}</h6>
-          <div class="ln"><span class="pill g" style="padding:3px 8px">${done}/${done} условий</span>${st}</div></div>
+          <div class="ln"><span class="pill g" style="padding:3px 8px">${done}/${done} условий</span>${st}${right}</div></div>
         <span class="arr">${ico('i-next')}</span></div>`;}).join('')
-      :emptyBlock('Ты пока нигде не участвуешь','Загляни в ленту — там есть что выиграть.',`<button class="btn btn-primary" data-act="go-feed">${ico('i-gift')}Смотреть розыгрыши</button>`);
+      :emptyBlock('Ты пока не участвуешь','Открой розыгрыш из поста в канале Winline — он появится здесь.',`<button class="btn btn-ghost" data-act="rules">${ico('i-info')}Как это работает</button>`);
   }else{
     const items=my.won.map(getGA).filter(Boolean);
-    body=items.length?items.map(g=>`<div class="ga"><div class="thumb">${ico('i-trophy')}</div>
+    body=items.length?items.map(g=>`<div class="ga" data-act="open-win:${g.id}"><div class="thumb">${ico('i-trophy')}</div>
       <div class="meta"><h6>${esc(g.prize)}</h6>
         <div class="ln"><span>${esc(g.title)}</span></div>
         <div class="ln" style="margin-top:4px"><span class="pill o">приз ждёт получения</span></div></div>
-      <button class="btn btn-primary btn-sm" data-act="claim:${g.id}" style="width:auto;padding:9px 14px">Забрать</button></div>`).join('')
-      :emptyBlock('Выигрышей пока нет','Участвуй активнее — победители выбираются случайно.',`<button class="btn btn-ghost" data-act="go-feed">К розыгрышам</button>`);
+      <span class="arr">${ico('i-next')}</span></div>`).join('')
+      :emptyBlock('Выигрышей пока нет','Участвуй в розыгрышах — победители выбираются случайно по таймеру.','');
   }
   return `<div class="h1">Мои розыгрыши</div>${seg}${body}`;
+};
+
+/* ---------- КАРТОЧКА РОЗЫГРЫША (участник) ---------- */
+ROUTES.giveaway=({id})=>{
+  const g=getGA(id); if(!g)return emptyBlock('Розыгрыш не найден','Возможно, он завершён или ссылка устарела.','');
+  const entered=MY().entered.includes(id);
+  const conds=g.conditions.length?g.conditions.map(c=>{const m=condMeta(c);
+    return `<div class="cond ${entered?'ok':'no'}"><div class="ci">${ico(m.icon)}</div>
+      <div class="cx"><b>${esc(m.title)}</b><span>${esc(m.sub)}</span></div>
+      <div class="st">${entered?ico('i-checkc'):ico('i-next','sm')}</div></div>`;}).join('')
+    :`<div class="hint">${ico('i-info','sm')}Особых условий нет — участвуют все авторизованные.</div>`;
+  const cover=g.image?`<img src="${g.image}" alt=""><div class="veil"></div>`:'';
+  const live=g.status==='active'; const hot=live&&(g.endsAt-Date.now())<DAY;
+  return `<div class="gcover detail">${cover}
+      <div class="timer ${hot?'hot':''}">${ico('i-clock','sm')}<span data-ends="${g.endsAt}">${live?timeLeft(g.endsAt):'завершён'}</span></div>
+      <div class="ct">${esc(g.coverLabel||g.title)}</div></div>
+    <div class="h1">${esc(g.title)}</div>
+    <div class="gmeta"><span class="pill o">${ico('i-trophy','sm')}${esc(g.prize)}</span>
+      <span class="pill d">${ico('i-users','sm')}${g.places} ${plural(g.places,'место','места','мест')}</span></div>
+    <div class="row2" style="margin-top:12px">
+      <button class="btn btn-ghost btn-sm" data-act="open-post:${id}">${ico('i-mega','sm')}Пост в канале</button>
+      <button class="btn btn-ghost btn-sm" data-act="rules">${ico('i-info','sm')}Правила</button></div>
+    <p class="lead" style="margin-top:14px">${esc(g.text)}</p>
+    <div class="sect">Условия участия</div>${conds}
+    ${live?(entered
+      ?`<div class="card okcard">${ico('i-checkc')}<span>Вы участвуете</span></div>`
+      :`<button class="btn btn-primary" style="margin-top:6px" data-act="participate:${id}">${esc(g.button)}</button>`)
+      :`<div class="card" style="text-align:center;color:var(--muted)">Розыгрыш завершён</div>
+        <button class="btn btn-ghost" style="margin-top:10px" data-act="open-results:${id}">${ico('i-trophy')}Смотреть итоги</button>`}`;
+};
+
+/* ---------- ВЫИГРЫШ (получение приза) ---------- */
+ROUTES.win=({id})=>{
+  const g=getGA(id); if(!g)return emptyBlock('Не найдено');
+  return `<div class="center" style="min-height:auto;padding-top:10px"><div class="burst">${ico('i-trophy')}</div>
+    <div class="h1">Вы выиграли</div><div class="lead" style="max-width:300px">${esc(g.prize)} · розыгрыш «${esc(g.title)}»</div></div>
+    <div class="sect">Получение приза</div>
+    <div class="card"><p style="font-size:13px;color:var(--muted);line-height:1.55">Подтвердите получение приза — мы свяжемся с вами в этом боте с инструкцией. Для денежных призов начисление идёт на баланс Winline.</p></div>
+    <button class="btn btn-primary" style="margin-top:12px" data-act="claim:${id}">${ico('i-checkc')}Забрать приз</button>
+    <div style="height:10px"></div>
+    <button class="btn btn-ghost" data-act="open-post:${id}">${ico('i-mega')}Пост с итогами</button>`;
+};
+
+/* ---------- ПРАВИЛА / FAQ ---------- */
+ROUTES.rules=()=>{
+  const item=(q,a)=>`<div class="faq"><b>${q}</b><p>${a}</p></div>`;
+  return `<div class="h1">Правила и FAQ</div>
+    <div class="lead">Как устроены розыгрыши Winline Giveaway.</div>
+    ${item('Как участвовать?','Откройте розыгрыш из поста в канале, авторизуйтесь через личный кабинет Winline и выполните условия (подписка, промокод или ставка). После проверки участие подтверждается автоматически.')}
+    ${item('Как выбираются победители?','Случайно среди участников, выполнивших все условия, по таймеру. Розыгрыш честный: публикуется проверочный хеш, по которому результат можно перепроверить (provably-fair).')}
+    ${item('Один аккаунт — одно участие','Один Winline ID привязывается к одному Telegram. Мультиаккаунты и боты исключаются из розыгрыша.')}
+    ${item('Как получить приз?','Победители получают уведомление в боте и видят приз во вкладке «Мои → Выигрыши». Денежные призы начисляются на баланс Winline, остальные — по инструкции в личке.')}
+    ${item('Если не забрал приз?','Если победитель не откликнулся в отведённое время, организатор может выбрать замену.')}`;
 };
 
 /* ---------- ПРОФИЛЬ ---------- */
@@ -242,7 +223,7 @@ ROUTES.profile=()=>{
   return `<div class="h1">Профиль</div>
     <div class="prow"><div class="ci">${ico('i-user')}</div><div class="px"><b>Тёма</b><span>Telegram @artem</span></div></div>
     ${linkRow}
-    <div class="prow"><div class="ci">${ico('i-checkc')}</div><div class="px"><b>Возраст 18+</b><span>Подтверждено через Winline</span></div></div>
+    <div class="prow link-row" data-act="rules"><div class="ci">${ico('i-info')}</div><div class="px"><b>Правила и FAQ</b><span>Как участвовать и получать призы</span></div><span class="arr">${ico('i-next')}</span></div>
     <div class="sect">Режим (демо)</div>
     <div class="lead" style="margin-bottom:10px">Переключи роль, чтобы посмотреть интерфейс админа. В бою роль выдаётся по TG-юзеру.</div>
     <div class="seg">
@@ -284,7 +265,7 @@ ROUTES.manage=({id})=>{
   const g=getGA(id); if(!g)return emptyBlock('Не найдено');
   const rng=mulberry32(hashStr(g.id+'p')); const cnt=g.status==='finished'?Math.floor(rng()*1500)+300:Math.floor(rng()*800)+40;
   const live=g.status==='active';
-  const conds=g.conditions.map(c=>{const m=condMeta(c);return `<span class="pill d">${ico(m.icon,'sm')}${esc(m.title)}</span>`;}).join(' ');
+  const conds=g.conditions.map(c=>{const m=condMeta(c);return `<span class="pill d">${ico(m.icon,'sm')}${esc(m.title)}</span>`;}).join(' ')||'<span class="pill d">без условий</span>';
   return `<div class="stat-row" style="margin-bottom:12px"><span class="pill d">ID ${esc(g.id)}</span>
     <span>${live?`<span class="pill o">● идёт</span>`:g.status==='paused'?`<span class="pill r">на паузе</span>`:`<span class="pill g">завершён</span>`}</span></div>
     <div class="h1">${esc(g.title)}</div>
@@ -293,6 +274,9 @@ ROUTES.manage=({id})=>{
       <div class="display" style="font-size:30px">${cnt.toLocaleString('ru')}</div></div>
       <span class="pill ${live?'o':'d'}">${live?'● live':'итог'}</span></div>
       <div class="gmeta" style="margin:12px 0 0">${conds}</div></div>
+    <div class="row2" style="margin-top:12px">
+      <button class="btn btn-ghost btn-sm" data-act="open-post:${id}">${ico('i-mega','sm')}Пост в канале</button>
+      <button class="btn btn-ghost btn-sm" data-act="preview:${id}">${ico('i-eye','sm')}Как участник</button></div>
     <div class="sect">Действия</div>
     <div class="row2">
       ${live?`<button class="btn btn-ghost btn-sm" data-act="pause:${id}">${ico('i-pause','sm')}Пауза</button>
@@ -311,7 +295,7 @@ ROUTES.manage=({id})=>{
     ${live?'':`<div style="height:10px"></div><button class="btn btn-primary" data-act="open-results:${id}">${ico('i-trophy')}Подвести итоги</button>`}`;
 };
 
-/* ---------- АДМИН: ИТОГИ ---------- */
+/* ---------- ИТОГИ (role-aware) ---------- */
 const NAMES=['alex','maria','dmitry','nika','pro_bet','egor','sofia','kirill','vlad','anna','max_cs','lena','roman','daria','artem','ivan','olga','pavel','yana','denis'];
 function maskId(rng,len){let s='';for(let i=0;i<len;i++)s+=Math.floor(rng()*10);return '···'+s;}
 function genWinners(g){const rng=mulberry32(hashStr(g.id+(g.seedNonce||'')));const n=Math.min(g.places||1,12);const out=[],used=new Set();
@@ -319,6 +303,7 @@ function genWinners(g){const rng=mulberry32(hashStr(g.id+(g.seedNonce||'')));con
     out.push({u:'@'+nm,wl:maskId(rng,4),tg:maskId(rng,4)});}return out;}
 ROUTES.results=({id})=>{
   const g=getGA(id); if(!g)return emptyBlock('Не найдено');
+  const admin=isAdmin();
   const w=genWinners(g); const extra=(g.places||1)-w.length;
   const seedHash=(hashStr(g.id+(g.seedNonce||''))>>>0).toString(16).padStart(8,'0');
   return `<div class="stat-row" style="margin-bottom:10px"><span class="pill d">ID ${esc(g.id)}</span>
@@ -326,19 +311,22 @@ ROUTES.results=({id})=>{
     <div class="h1">Итоги</div>
     <div class="lead">${esc(g.title)} · ${g.places} ${plural(g.places,'место','места','мест')}. Случайно среди выполнивших условия.</div>
     <div id="winlist">${w.map((x,i)=>`<div class="win ${i<3?'top'+(i+1):''}"><div class="num">${i+1}</div>
-      <div><div class="u">${esc(x.u)}</div><div class="id">WL ${x.wl} · TG ${x.tg}</div></div></div>`).join('')}</div>
+      <div><div class="u">${esc(x.u)}</div>${admin?`<div class="id">WL ${x.wl} · TG ${x.tg}</div>`:''}</div></div>`).join('')}</div>
     ${extra>0?`<div class="card" style="text-align:center;color:var(--muted);font-size:12.5px">… и ещё ${extra} ${plural(extra,'победитель','победителя','победителей')}</div>`:''}
     <div class="card" style="margin-top:12px"><div style="font-size:11.5px;color:var(--muted)">Проверочный хеш (provably-fair)</div>
       <div class="mono" style="font-size:13px;margin-top:4px;color:var(--brand-300)">${seedHash}</div>
       <div class="hint" style="margin-top:6px">${ico('i-info','sm')}Сид публикуется после итогов — любой может пересчитать список.</div></div>
-    <button class="btn btn-primary" style="margin-top:12px" data-act="pub-results:${id}">${ico('i-mega')}Опубликовать итоги</button>
-    <div class="row2" style="margin-top:10px">
-      <button class="btn btn-ghost btn-sm" data-act="reroll:${id}">${ico('i-loader','sm')}Рерол</button>
-      <button class="btn btn-ghost btn-sm" data-act="open-analytics:${id}">${ico('i-chart','sm')}Аналитика</button></div>`;
+    ${admin
+      ?`<button class="btn btn-primary" style="margin-top:12px" data-act="pub-results:${id}">${ico('i-mega')}Опубликовать итоги</button>
+        <div class="row2" style="margin-top:10px">
+          <button class="btn btn-ghost btn-sm" data-act="reroll:${id}">${ico('i-loader','sm')}Рерол</button>
+          <button class="btn btn-ghost btn-sm" data-act="open-analytics:${id}">${ico('i-chart','sm')}Аналитика</button></div>`
+      :`<button class="btn btn-ghost" style="margin-top:12px" data-act="open-post:${id}">${ico('i-mega')}Пост с итогами в канале</button>`}`;
 };
 
-/* ---------- АДМИН: АНАЛИТИКА ---------- */
+/* ---------- АДМИН: АНАЛИТИКА (только админ) ---------- */
 ROUTES.analytics=({id})=>{
+  if(!isAdmin()) return emptyBlock('Недоступно','Аналитика доступна только администратору.','');
   const g=getGA(id); if(!g)return emptyBlock('Не найдено');
   const rng=mulberry32(hashStr(g.id+'a'));
   const total=Math.floor(rng()*1500)+300, passed=Math.floor(total*(0.6+rng()*0.2)), linkedN=Math.floor(total*(0.6+rng()*0.25));
@@ -361,6 +349,7 @@ ROUTES.analytics=({id})=>{
 
 /* ---------- АДМИН: КОМАНДА (супер) ---------- */
 ROUTES.team=()=>{
+  if(role()!=='super') return emptyBlock('Недоступно','Управление командой доступно супер-админу.','');
   const admins=lj(K_ADMINS,[]);
   const rows=admins.map((a,i)=>`<div class="prow"><div class="ci">${ico('i-user')}</div>
     <div class="px"><b>${esc(a.u)}</b><span>${esc(a.role)}</span></div>
@@ -451,28 +440,27 @@ function draftTitle(){const f=(draft.text||'').split('\n')[0].trim();return f?(f
 function paintConds(){const host=$('#condHost');if(host)host.innerHTML=renderCondEditors();const b=$('#condBadge');if(b&&draft)b.textContent=draft.conditions.length;}
 
 /* ---------- model update ---------- */
-function modelUpdate(key,val,node){
-  if(!draft)return;
-  if(['text','button','places','dateStr'].includes(key)){ draft[key]=val; refreshPreviewLive(); }
-}
+function modelUpdate(key,val,node){ if(!draft)return; if(['text','button','places','dateStr'].includes(key)){ draft[key]=val; refreshPreviewLive(); } }
 function refreshPreviewLive(){ const host=$('.preview'); if(host&&draft) host.outerHTML=renderPreview(); }
 
 /* ============================================================ ОБРАБОТЧИК ============================================================ */
 function handle(act,arg,node){
   haptic();
   switch(act){
-    case 'start': localStorage.setItem(K_ONB,'1'); setTab('feed'); break;
+    case 'start': localStorage.setItem(K_ONB,'1'); setTab('mine'); break;
     case 'open-ga': push({name:'giveaway',params:{id:arg}}); break;
+    case 'open-win': push({name:'win',params:{id:arg}}); break;
+    case 'preview': push({name:'giveaway',params:{id:arg}}); break;
     case 'open-manage': push({name:'manage',params:{id:arg}}); break;
     case 'open-results': push({name:'results',params:{id:arg}}); break;
     case 'open-analytics': push({name:'analytics',params:{id:arg}}); break;
     case 'open-team': push({name:'team'}); break;
+    case 'rules': push({name:'rules'}); break;
+    case 'open-post': { const g=getGA(arg); const u=g&&(g.postUrl||('https://t.me/'+((g.pubChannels&&g.pubChannels[0]||'').replace('@','')))); if(u)openTg(u); ping('Открываем пост в канале'); break; }
     case 'go-admin': setTab('admin'); break;
-    case 'go-feed': setTab('feed'); break;
 
-    case 'filter': state.feedFilter=arg; render(); break;
     case 'seg': mineSeg=arg; render(); break;
-    case 'role': setRole(arg); ping('Роль: '+ROLE_LABEL[arg]); setTab(role()==='user'?'feed':'admin'); break;
+    case 'role': setRole(arg); ping('Роль: '+ROLE_LABEL[arg]); setTab(role()==='user'?'mine':'admin'); break;
     case 'link': case 'unlink': toggleLink(act); break;
 
     case 'participate': participate(arg); break;
@@ -507,7 +495,7 @@ function handle(act,arg,node){
   }
 }
 
-/* ---------- реализация действий ---------- */
+/* ---------- реализация ---------- */
 function toggleLink(act){ if(act==='unlink'){ sj(K_LINK,{linked:false,winlineId:''}); render(); ping('Winline отвязан'); } else openAuth(null); }
 function togglePub(c,node){ const i=draft.pubChannels.indexOf(c); if(i>=0){ if(draft.pubChannels.length>1) draft.pubChannels.splice(i,1); } else draft.pubChannels.push(c); node.classList.toggle('sel',draft.pubChannels.includes(c)); }
 function addCond(type){ const c=type==='sub'?{type:'sub',channels:['@winline_official']}:type==='promo'?{type:'promo',code:''}:{type:'bet',amount:'',category:'Все события',link:''}; draft.conditions.push(c); paintConds(); }
@@ -530,10 +518,12 @@ function buildFromDraft(id,createdAt){
   const m=(draft.dateStr||'').match(/(\d{2})\.(\d{2})\.(\d{2})\s+(\d{1,2}):(\d{2})/);
   if(m) endsAt=new Date(2000+ +m[3],+m[2]-1,+m[1],+m[4],+m[5]).getTime();
   else if(draft.dateStr==='Сейчас') endsAt=Date.now()+DAY;
-  const ptype=draft.conditions.length?'Приз':'Приз';
+  const ch=(draft.pubChannels[0]||'').replace('@','');
   return {id,title:draftTitle(),prize:draftTitle(),prizeType:'Приз',coverLabel:draftTitle(),
     text:draft.text,image:draft.image,button:draft.button,conditions:JSON.parse(JSON.stringify(draft.conditions)),
-    places:+draft.places||1,pubChannels:draft.pubChannels.slice(),endsAt,createdAt,status:'active',owner:'me'};
+    places:+draft.places||1,pubChannels:draft.pubChannels.slice(),
+    postUrl: ch?('https://t.me/'+ch):'', /* TODO:BACKEND — точная ссылка на пост после публикации */
+    endsAt,createdAt,status:'active',owner:'me'};
 }
 function editGiveaway(id){
   const g=getGA(id); if(!g)return;
@@ -560,7 +550,7 @@ function reroll(id){
 }
 function addAdmin(){const el=$('#newAdmin');if(!el||!el.value.trim())return;const a=lj(K_ADMINS,[]);const v=el.value.trim();a.push({u:v.startsWith('@')?v:'@'+v,role:'Админ'});sj(K_ADMINS,a);render();ping('Доступ выдан');}
 
-/* ---------- участие + авторизация ---------- */
+/* ---------- участие + авторизация (заглушки) ---------- */
 function participate(id){ const g=getGA(id); if(!g)return; if(!link().linked){ openAuth(g); return; } runChecks(g); }
 function openAuth(g){
   openSheet(`<h3>Вход в Winline</h3>
@@ -607,7 +597,18 @@ $('#fileInput').addEventListener('change',e=>{
 /* ---------- живые таймеры ---------- */
 setInterval(()=>{ $$('[data-ends]').forEach(elm=>{const t=+elm.dataset.ends; elm.textContent=Date.now()>=t?'завершён':timeLeft(t);}); },1000);
 
+/* ---------- deep-link ---------- */
+function startParam(){
+  try{ if(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.start_param) return tg.initDataUnsafe.start_param; }catch(e){}
+  const m=(location.hash||'').match(/ga=([\w-]+)/)||(location.search||'').match(/ga=([\w-]+)/);
+  return m?m[1]:null;
+}
+
 /* ---------- init ---------- */
 seed();
-if(localStorage.getItem(K_ONB)){ setTab('feed'); }
-else { state.tab=null; state.stack=[{name:'onboarding'}]; render(); }
+(function init(){
+  const sp=startParam();
+  if(sp&&getGA(sp)){ state.tab='mine'; state.stack=[tabRoot('mine'),{name:'giveaway',params:{id:sp}}]; render(); return; }
+  if(localStorage.getItem(K_ONB)){ setTab('mine'); return; }
+  state.tab=null; state.stack=[{name:'onboarding'}]; render();
+})();
