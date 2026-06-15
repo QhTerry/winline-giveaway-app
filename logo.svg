@@ -1,0 +1,7 @@
+<svg width="2600" height="620" viewBox="0 0 2600 620" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="WINLINE">
+  <!-- Воссоздание лого Winline: оранжевый контур-пилюля, графитовая заливка, белый курсивный WINLINE, оранжевая точка -->
+  <rect x="20" y="20" width="2560" height="580" rx="290" fill="#F58220"/>
+  <rect x="92" y="92" width="2416" height="436" rx="218" fill="#1A1A1A"/>
+  <circle cx="2300" cy="310" r="150" fill="#F58220"/>
+  <text x="170" y="430" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-style="italic" font-size="360" letter-spacing="-6" fill="#FFFFFF">WINLINE</text>
+</svg>
