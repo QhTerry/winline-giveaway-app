@@ -4,10 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Winline Giveaway</title>
-<meta name="theme-color" content="#121212">
+<meta name="theme-color" content="#0C0C0E">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Saira:ital,wght@0,600;0,700;0,800;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
@@ -32,214 +33,42 @@
   <symbol id="i-checkc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
   <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13A4 4 0 0 1 16 11"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></symbol>
   <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
   <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></symbol>
   <symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></symbol>
   <symbol id="i-sheet" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 3v18"/></symbol>
   <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></symbol>
-  <symbol id="i-loader" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9" /></symbol>
+  <symbol id="i-loader" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></symbol>
   <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-fire" viewBox="0 0 24 24"><path d="M12 3c1 3-1 4-1 6a3 3 0 0 0 6 0c0-1 0-2-.5-3 2 2 3.5 4.5 3.5 7a8 8 0 1 1-16 0c0-3 2-5 3-7 .5 2 2 2 2 4 0-3 0-5 0-7z"/></symbol>
 </svg>
 
 <div class="app">
-  <!-- ===== HEADER ===== -->
   <header class="hdr">
     <div class="back" id="backBtn"><svg class="icon"><use href="#i-back"/></svg></div>
     <img class="logo" src="logo.svg" alt="Winline">
-    <span class="chip">Giveaway</span>
+    <span class="htitle" id="hTitle"></span>
     <div class="sp"></div>
+    <span class="role" id="roleChip"></span>
   </header>
 
-  <main class="main" id="main">
+  <main class="view" id="view"></main>
 
-    <!-- ============ МЕНЮ ============ -->
-    <section class="screen active" data-screen="menu">
-      <div class="hero">
-        <h2>Розыгрыши для своих 🎁</h2>
-        <p>Создавайте розыгрыши, проверяйте условия через личный кабинет Winline и подводите итоги в один тап.</p>
-      </div>
-      <div class="menu-grid">
-        <button class="btn btn-primary" data-go="create"><svg class="icon"><use href="#i-plus"/></svg>Создать розыгрыш</button>
-        <button class="btn btn-ghost" data-go="my"><svg class="icon"><use href="#i-list"/></svg>Мои розыгрыши</button>
-      </div>
-      <div class="card" style="margin-top:16px">
-        <div class="stat-row">
-          <div><div style="font-size:12.5px;color:var(--muted)">Активных розыгрышей</div>
-            <div style="font-size:24px;font-weight:900" id="activeCount">0</div></div>
-          <span class="pill o">● онлайн</span>
-        </div>
-      </div>
-      <p class="footnote">Демо-режим: данные хранятся локально в браузере.<br>Авторизация Winline, проверка подписок и Google Sheets подключаются на бэкенде.</p>
-    </section>
-
-    <!-- ============ СОЗДАНИЕ (ВИЗАРД) ============ -->
-    <section class="screen" data-screen="create">
-      <div class="steps" id="steps"></div>
-
-      <!-- шаг 1 -->
-      <div class="wstep" data-step="1">
-        <div class="eyebrow">Шаг 1 из 9 · Оформление</div>
-        <div class="h1">Текст и медиа</div>
-        <div class="lead">Загрузите изображение и текст розыгрыша — это увидят участники.</div>
-        <label class="upload" id="uploader" for="fileInput">
-          <svg class="icon"><use href="#i-img"/></svg>
-          <span id="uploadLabel">Нажмите, чтобы выбрать изображение</span>
-        </label>
-        <input type="file" id="fileInput" accept="image/*" hidden>
-        <div class="field" style="margin-top:14px">
-          <label>Текст розыгрыша</label>
-          <textarea class="textarea" id="f-text" placeholder="Разыгрываем 50 000 ₽ среди подписчиков! Условия — ниже 👇"></textarea>
-        </div>
-      </div>
-
-      <!-- шаг 2 -->
-      <div class="wstep" data-step="2" hidden>
-        <div class="eyebrow">Шаг 2 из 9 · Кнопка участия</div>
-        <div class="h1">Текст кнопки</div>
-        <div class="lead">Выберите вариант или впишите свой.</div>
-        <div class="chips" data-single="btn">
-          <div class="chip sel">УЧАСТВОВАТЬ</div><div class="chip">ПРИНЯТЬ УЧАСТИЕ</div><div class="chip">УЧАСТВУЮ</div>
-        </div>
-        <div class="field" style="margin-top:14px"><label>Свой текст кнопки</label>
-          <input class="input" id="f-btn-custom" placeholder="Напр.: ХОЧУ ВЫИГРАТЬ"></div>
-      </div>
-
-      <!-- шаг 3 -->
-      <div class="wstep" data-step="3" hidden>
-        <div class="eyebrow">Шаг 3 из 9 · Подписки</div>
-        <div class="h1">Каналы для проверки</div>
-        <div class="lead">Подписка на канал розыгрыша включена по умолчанию. Добавьте другие — бот должен быть админом канала.</div>
-        <div id="channel-list"></div>
-        <div class="field" style="margin-top:12px;display:flex;gap:8px">
-          <input class="input" id="f-channel" placeholder="@username или ссылка">
-          <button class="btn btn-ghost btn-sm" id="addChannel" style="width:auto;padding:0 16px">Добавить</button>
-        </div>
-        <div class="hint"><svg class="icon sm"><use href="#i-info"/></svg>Не забирайте у бота права администратора — иначе проверка подписки сломается.</div>
-      </div>
-
-      <!-- шаг 4 -->
-      <div class="wstep" data-step="4" hidden>
-        <div class="eyebrow">Шаг 4 из 9 · Условие</div>
-        <div class="h1">Промокод</div>
-        <div class="lead">Промокод регистрации, который засчитывается как выполнение условия.</div>
-        <div class="field"><label>Промокод</label><input class="input" id="f-promo" placeholder="ESPORTS2026"></div>
-      </div>
-
-      <!-- шаг 5 -->
-      <div class="wstep" data-step="5" hidden>
-        <div class="eyebrow">Шаг 5 из 9 · Условие</div>
-        <div class="h1">Размер ставки</div>
-        <div class="lead">Минимальная ставка для участия (₽), сделанная в период розыгрыша.</div>
-        <div class="field"><label>Сумма, ₽</label><input class="input" id="f-bet" type="number" inputmode="numeric" placeholder="500"></div>
-      </div>
-
-      <!-- шаг 6 -->
-      <div class="wstep" data-step="6" hidden>
-        <div class="eyebrow">Шаг 6 из 9 · Условие</div>
-        <div class="h1">Категория событий</div>
-        <div class="lead">На какие события должна быть ставка.</div>
-        <div class="chips" data-single="cat" id="catChips">
-          <div class="chip">ВСЕ СОБЫТИЯ</div><div class="chip sel">КИБЕРСПОРТ</div><div class="chip">ДРУГОЕ</div>
-        </div>
-        <div class="field" id="catLink" style="margin-top:14px;display:none">
-          <label>Ссылка на категорию / событие Winline</label>
-          <input class="input" id="f-catlink" placeholder="https://winline.ru/stavki/sport/kibersport/...">
-        </div>
-      </div>
-
-      <!-- шаг 7 -->
-      <div class="wstep" data-step="7" hidden>
-        <div class="eyebrow">Шаг 7 из 9 · Победители</div>
-        <div class="h1">Количество мест</div>
-        <div class="lead">Сколько победителей выберем случайным образом.</div>
-        <div class="field"><label>Мест</label><input class="input" id="f-places" type="number" inputmode="numeric" placeholder="50"></div>
-      </div>
-
-      <!-- шаг 8 -->
-      <div class="wstep" data-step="8" hidden>
-        <div class="eyebrow">Шаг 8 из 9 · Публикация</div>
-        <div class="h1">Где публикуем?</div>
-        <div class="lead">Выберите канал из доступных.</div>
-        <div class="chips" data-single="pub" style="flex-direction:column">
-          <div class="chip block sel"><svg class="icon sm"><use href="#i-mega"/></svg>@winline_official</div>
-          <div class="chip block"><svg class="icon sm"><use href="#i-mega"/></svg>@winline_esports</div>
-          <div class="chip block"><svg class="icon sm"><use href="#i-mega"/></svg>@winline_sport</div>
-        </div>
-      </div>
-
-      <!-- шаг 9 -->
-      <div class="wstep" data-step="9" hidden>
-        <div class="eyebrow">Шаг 9 из 9 · Время и проверка</div>
-        <div class="h1">Когда публикуем</div>
-        <div class="lead">Укажите дату/время итогов или опубликуйте сразу.</div>
-        <div class="field"><label>Дата и время итогов</label><input class="input" id="f-date" placeholder="01.07.26 18:00"></div>
-        <div class="btn-row" style="margin-top:0;margin-bottom:18px">
-          <button class="btn btn-ghost btn-sm" id="schedBtn"><svg class="icon sm"><use href="#i-cal"/></svg>По расписанию</button>
-          <button class="btn btn-primary btn-sm" id="nowBtn"><svg class="icon sm"><use href="#i-bolt"/></svg>Сейчас</button>
-        </div>
-        <div class="eyebrow">Предпросмотр</div>
-        <div id="pv-host"></div>
-        <div class="eyebrow" style="margin-top:14px">Сводка условий</div>
-        <div class="summary" id="summary-host"></div>
-      </div>
-
-      <!-- навигация визарда -->
-      <div class="btn-row">
-        <button class="btn btn-ghost" id="wBack"><svg class="icon"><use href="#i-back"/></svg>Назад</button>
-        <button class="btn btn-primary" id="wNext">Далее<svg class="icon"><use href="#i-next"/></svg></button>
-      </div>
-    </section>
-
-    <!-- ============ УСПЕХ ============ -->
-    <section class="screen" data-screen="published">
-      <div class="center">
-        <div class="burst"><svg class="icon"><use href="#i-checkc"/></svg></div>
-        <div class="h1">Розыгрыш опубликован!</div>
-        <div class="lead" id="pubMsg" style="max-width:300px">Карточка ушла в канал. Итоги подведём автоматически.</div>
-        <div style="width:100%">
-          <button class="btn btn-primary" data-go="my"><svg class="icon"><use href="#i-list"/></svg>К моим розыгрышам</button>
-          <div style="height:10px"></div>
-          <button class="btn btn-ghost" data-go="menu">На главную</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ МОИ РОЗЫГРЫШИ ============ -->
-    <section class="screen" data-screen="my">
-      <div class="h1">Мои розыгрыши</div>
-      <div class="lead">Активные и завершённые розыгрыши.</div>
-      <div id="my-host"></div>
-    </section>
-
-    <!-- ============ ИТОГИ ============ -->
-    <section class="screen" data-screen="results">
-      <div id="results-host"></div>
-    </section>
-
-    <!-- ============ АНАЛИТИКА ============ -->
-    <section class="screen" data-screen="analytics">
-      <div id="analytics-host"></div>
-    </section>
-
-    <!-- ============ ПРЕДПРОСМОТР УЧАСТНИКА ============ -->
-    <section class="screen" data-screen="participant">
-      <div class="eyebrow">Как видит участник</div>
-      <div id="participant-host"></div>
-    </section>
-
-  </main>
+  <nav class="tabbar" id="tabbar"></nav>
 </div>
 
-<!-- toast -->
 <div class="toast" id="toast"><svg class="icon"><use href="#i-checkc"/></svg><span id="toastMsg">Готово</span></div>
+<div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+<input type="file" id="fileInput" accept="image/*" hidden>
 
-<!-- модалка авторизации участника -->
-<div class="modal" id="modal">
-  <div class="sheet" id="sheet"></div>
-</div>
-
-<script src="app.js"></script>
+<script src="app.v2.js"></script>
 </body>
 </html>
