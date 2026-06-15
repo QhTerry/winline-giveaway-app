@@ -375,22 +375,25 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font
 
 /* ============================================================ GLASS THEME — тёмное стекло (бренд без изменений) ============================================================ */
 :root{
-  --stroke: rgba(255,255,255,.10);
-  --stroke-2: rgba(255,255,255,.18);
-  --glass-1: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.025));
-  --glass-2: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
-  --glass-blur: blur(18px) saturate(140%);
-  --glass-edge: inset 0 1px 0 rgba(255,255,255,.07);
-  --glass-shadow: 0 18px 44px -26px rgba(0,0,0,.9);
+  --stroke: rgba(255,255,255,.11);
+  --stroke-2: rgba(255,255,255,.20);
+  --glass-1: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.018));
+  --glass-2: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.03));
+  --glass-blur: blur(30px) saturate(150%);
+  --glass-edge: inset 0 1px 0 rgba(255,255,255,.08);
+  --glass-shadow: 0 18px 46px -26px rgba(0,0,0,.92);
 }
-/* фон под стекло: глубокий графит + мягкие оранжевые свечения */
-.app{
+/* глубокий графит + живой анимированный оранжевый «нимб» под стеклом */
+body{background:#0A0A0C}
+.app{background:transparent;position:relative}
+.app::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
   background:
-    radial-gradient(820px 460px at 90% -6%, rgba(242,111,30,.20), transparent 58%),
-    radial-gradient(620px 420px at -12% 10%, rgba(242,111,30,.12), transparent 55%),
-    radial-gradient(720px 560px at 50% 116%, rgba(242,111,30,.07), transparent 60%),
-    #0A0A0C;
-}
+    radial-gradient(560px 480px at 86% -4%, rgba(242,111,30,.26), transparent 60%),
+    radial-gradient(520px 440px at -10% 14%, rgba(242,111,30,.16), transparent 58%),
+    radial-gradient(640px 540px at 50% 118%, rgba(242,111,30,.12), transparent 60%);
+  animation:bgdrift 22s ease-in-out infinite alternate}
+.view{position:relative;z-index:1}
+@keyframes bgdrift{0%{transform:translate3d(-2%,-1%,0) scale(1)}100%{transform:translate3d(2%,2%,0) scale(1.08)}}
 /* стеклянные поверхности */
 .card,.gcard,.ga,.kpi,.prow,.act-tile,.cond,.preview,.mini-card,.faq,.cond-edit{
   background:var(--glass-1);
@@ -432,3 +435,22 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font
   .card,.gcard,.ga,.kpi,.prow,.act-tile,.cond,.preview,.mini-card,.faq,.cond-edit,.input,.textarea,select,.btn-ghost{-webkit-backdrop-filter:none;backdrop-filter:none;background:#16161c}
   .hdr,.tabbar,.sheet,.toast{-webkit-backdrop-filter:none;backdrop-filter:none;background:#0c0c0e}
 }
+
+/* ===== Spotlight-обводка карточек (десктоп) ===== */
+.gcard,.ga,.act-tile,.card,.kpi,.prow{position:relative;overflow:hidden}
+.gcard::after,.ga::after,.act-tile::after,.card::after,.kpi::after,.prow::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .25s;
+  background:radial-gradient(220px 220px at var(--mx,50%) var(--my,0%), rgba(242,111,30,.16), transparent 60%)}
+@media (hover:hover){
+  .gcard:hover::after,.ga:hover::after,.act-tile:hover::after,.card:hover::after,.kpi:hover::after,.prow:hover::after{opacity:1}
+}
+
+/* ===== Появление победителей (анимация розыгрыша) ===== */
+@keyframes winIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+#winlist .win{animation:winIn .45s cubic-bezier(.2,.8,.2,1) both}
+#winlist .win:nth-child(1){animation-delay:.04s}
+#winlist .win:nth-child(2){animation-delay:.10s}
+#winlist .win:nth-child(3){animation-delay:.16s}
+#winlist .win:nth-child(4){animation-delay:.22s}
+#winlist .win:nth-child(5){animation-delay:.28s}
+#winlist .win:nth-child(n+6){animation-delay:.34s}

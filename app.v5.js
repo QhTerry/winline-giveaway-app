@@ -647,6 +647,16 @@ $('#fileInput').addEventListener('change',e=>{
   r.readAsDataURL(f); e.target.value='';
 });
 
+/* ---------- spotlight на карточках (десктоп: есть hover) ---------- */
+if (window.matchMedia && matchMedia('(hover:hover)').matches){
+  document.addEventListener('pointermove',(e)=>{
+    const c=e.target.closest('.gcard,.ga,.act-tile,.card,.kpi,.prow'); if(!c)return;
+    const r=c.getBoundingClientRect();
+    c.style.setProperty('--mx',((e.clientX-r.left)/r.width*100).toFixed(1)+'%');
+    c.style.setProperty('--my',((e.clientY-r.top)/r.height*100).toFixed(1)+'%');
+  },{passive:true});
+}
+
 /* ---------- таймеры ---------- */
 setInterval(()=>{ $$('[data-ends]').forEach(elm=>{const t=+elm.dataset.ends; elm.textContent=Date.now()>=t?'завершён':timeLeft(t);}); },1000);
 
