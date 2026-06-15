@@ -1,5 +1,5 @@
 /* ============================================================
-   WINLINE GIVEAWAY — mini app (role-aware SPA)
+   WINLINE GIVEAWAY — mini app (role-aware SPA) · v3
    Демо: данные в localStorage. Точки бэкенда помечены TODO:BACKEND.
    Роли: user / admin / super (переключается в Профиле для демо).
    ============================================================ */
@@ -23,7 +23,7 @@ function dstr(ms){const d=new Date(ms),p=n=>String(n).padStart(2,'0');return `${
 function timeLeft(ms){let s=Math.max(0,Math.floor((ms-Date.now())/1000));const d=Math.floor(s/86400);s%=86400;const h=Math.floor(s/3600);s%=3600;const m=Math.floor(s/60);const ss=s%60;const p=n=>String(n).padStart(2,'0');return d>0?`${d}д ${p(h)}:${p(m)}:${p(ss)}`:`${p(h)}:${p(m)}:${p(ss)}`;}
 
 /* ---------- storage ---------- */
-const K_GA='wl_giveaways_v2', K_MY='wl_my_v1', K_ROLE='wl_role', K_LINK='wl_link', K_ADMINS='wl_admins';
+const K_GA='wl_giveaways_v2', K_MY='wl_my_v1', K_ROLE='wl_role', K_LINK='wl_link', K_ADMINS='wl_admins', K_ONB='wl_onboarded';
 const lj=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}};
 const sj=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const DAY=864e5, HR=36e5;
@@ -32,23 +32,23 @@ function seed(){
   const now=Date.now();
   sj(K_GA,[
     {id:'GA-2050',title:'iPhone 17 Pro',prize:'iPhone 17 Pro',prizeType:'Девайс',coverLabel:'iPhone 17 Pro',
-     text:'Разыгрываем iPhone 17 Pro среди подписчиков! Выполни условия и участвуй 🎁',button:'УЧАСТВОВАТЬ',
+     text:'Разыгрываем iPhone 17 Pro среди подписчиков. Выполни условия и участвуй.',button:'УЧАСТВОВАТЬ',
      conditions:[{type:'sub',channels:['@winline_official']},{type:'bet',amount:1000,category:'Все события',link:''}],
      places:1,pubChannels:['@winline_official'],endsAt:now+5*DAY,createdAt:today(),status:'active',owner:'me'},
     {id:'GA-2055',title:'Мерч Winline',prize:'Комплект мерча ×3',prizeType:'Мерч',coverLabel:'Мерч Winline ×3',
-     text:'Дарим фирменный мерч Winline! Три комплекта победителям 🔥',button:'УЧАСТВУЮ',
+     text:'Дарим фирменный мерч Winline. Три комплекта победителям.',button:'УЧАСТВУЮ',
      conditions:[{type:'sub',channels:['@winline_official','@winline_esports']},{type:'promo',code:'MERCH'}],
      places:3,pubChannels:['@winline_official'],endsAt:now+2*DAY,createdAt:today(),status:'active',owner:'me'},
     {id:'GA-2060',title:'Билеты на матч',prize:'2 билета на матч',prizeType:'Билеты',coverLabel:'Билеты на матч',
-     text:'Два билета на топовый матч! Сделай ставку и участвуй ⚽',button:'ПРИНЯТЬ УЧАСТИЕ',
+     text:'Два билета на топовый матч. Сделай ставку и участвуй.',button:'ПРИНЯТЬ УЧАСТИЕ',
      conditions:[{type:'sub',channels:['@winline_sport']},{type:'bet',amount:500,category:'Киберспорт',link:''},{type:'promo',code:'MATCH'}],
      places:5,pubChannels:['@winline_sport'],endsAt:now+12*HR,createdAt:today(),status:'active',owner:'me'},
     {id:'GA-2041',title:'Розыгрыш 50 000 ₽',prize:'50 000 ₽ фрибетом',prizeType:'Фрибет',coverLabel:'50 000 ₽',
-     text:'Разыгрываем 50 000 ₽ фрибетом среди подписчиков!',button:'УЧАСТВОВАТЬ',
+     text:'Разыгрываем 50 000 ₽ фрибетом среди подписчиков.',button:'УЧАСТВОВАТЬ',
      conditions:[{type:'sub',channels:['@winline_official','@winline_esports']},{type:'promo',code:'ESPORTS2026'},{type:'bet',amount:500,category:'Киберспорт',link:''}],
      places:50,pubChannels:['@winline_official'],endsAt:now-2*DAY,createdAt:'10.06.26',status:'finished',owner:'me'}
   ]);
-  sj(K_MY,{entered:['GA-2050'],won:['GA-2041']});
+  sj(K_MY,{entered:['GA-2050','GA-2060'],won:['GA-2041']});
   sj(K_LINK,{linked:true,winlineId:'WL-7421902'});
   sj(K_ADMINS,[{u:'@artem',role:'Супер-админ'},{u:'@manager_cs',role:'Админ'},{u:'@smm_winline',role:'Админ'}]);
 }
@@ -69,12 +69,10 @@ function condMeta(c){
 }
 
 /* ============================================================ НАВИГАЦИЯ ============================================================ */
-const view=$('#view'), backBtn=$('#backBtn'), hTitle=$('#hTitle'), roleChip=$('#roleChip'), tabbar=$('#tabbar');
+const view=$('#view'), backBtn=$('#backBtn'), tabbar=$('#tabbar');
 const ROLE_LABEL={user:'Участник',admin:'Админ',super:'Супер-админ'};
-const TITLES={feed:'Розыгрыши',mine:'Мои',profile:'Профиль',adminDash:'Админка',giveaway:'Розыгрыш',
-  constructor:'Создание',manage:'Управление',results:'Итоги',analytics:'Аналитика',team:'Команда',published:'Готово'};
 
-let state={tab:'feed', stack:[{name:'feed'}]};
+let state={tab:'feed', stack:[{name:'feed'}], feedFilter:'Все'};
 
 function tabsForRole(){
   const t=[{id:'feed',icon:'i-gift',label:'Лента'},{id:'mine',icon:'i-ticket',label:'Мои'}];
@@ -95,12 +93,12 @@ function render(){
   const route=state.stack[state.stack.length-1];
   const fn=ROUTES[route.name]; if(!fn)return;
   view.innerHTML=fn(route.params||{});
-  hTitle.textContent=TITLES[route.name]||'';
-  roleChip.textContent=ROLE_LABEL[role()];
-  const showBack=state.stack.length>1;
+  const onboard = route.name==='onboarding';
+  tabbar.style.display = onboard?'none':'flex';
+  const showBack=state.stack.length>1 && !onboard;
   backBtn.classList.toggle('show',showBack);
   if(tg){try{showBack?tg.BackButton.show():tg.BackButton.hide();}catch(e){}}
-  renderTabbar();
+  if(!onboard) renderTabbar();
   view.scrollTop=0; window.scrollTo(0,0);
 }
 
@@ -112,7 +110,6 @@ document.addEventListener('click',e=>{
   const [act,...rest]=a.dataset.act.split(':'); const arg=rest.join(':');
   handle(act,arg,a);
 });
-/* делегирование input для модели (конструктор/поля) */
 document.addEventListener('input',e=>{
   const m=e.target.closest('[data-model]'); if(m){ modelUpdate(m.dataset.model,e.target.value,m); return; }
   const c=e.target.closest('[data-cond]'); if(c&&draft){const [i,f]=c.dataset.cond.split(':');draft.conditions[+i][f]=e.target.value; if(f==='category')paintConds();}
@@ -128,14 +125,43 @@ modal.addEventListener('click',e=>{if(e.target===modal)closeSheet();});
 /* ============================================================ РОУТЫ ============================================================ */
 const ROUTES={};
 
+/* ---------- ОНБОРДИНГ ---------- */
+ROUTES.onboarding=()=>{
+  const feat=(i,t,s)=>`<div class="onb-feat"><div class="ci">${ico(i)}</div><div><b>${t}</b><span>${s}</span></div></div>`;
+  return `<div class="onb">
+    <div class="onb-hero"><img src="logo.svg" class="onb-logo" alt="Winline"><div class="onb-badge">GIVEAWAY</div></div>
+    <div class="onb-content">
+      <div class="h1" style="font-size:30px">Розыгрыши Winline</div>
+      <p class="lead">Участвуй, выполняй условия и забирай призы — фрибеты, девайсы, мерч и билеты. Всё в одном приложении.</p>
+      ${feat('i-gift','Призы каждую неделю','Новые розыгрыши регулярно')}
+      ${feat('i-shield','Безопасно через Winline','Привязка аккаунта по API')}
+      ${feat('i-trophy','Честный розыгрыш','Случайный выбор с проверкой результата')}
+    </div>
+    <div class="onb-cta"><button class="btn btn-primary" data-act="start">Начать</button></div>
+  </div>`;
+};
+
 /* ---------- ЛЕНТА ---------- */
 ROUTES.feed=()=>{
-  const list=GA().filter(g=>g.status==='active').sort((a,b)=>a.endsAt-b.endsAt);
+  const active=GA().filter(g=>g.status==='active').sort((a,b)=>a.endsAt-b.endsAt);
+  const types=['Все',...Array.from(new Set(active.map(g=>g.prizeType)))];
+  if(!types.includes(state.feedFilter)) state.feedFilter='Все';
+  const list=state.feedFilter==='Все'?active:active.filter(g=>g.prizeType===state.feedFilter);
+
+  const myActive=MY().entered.map(getGA).filter(g=>g&&g.status==='active');
+  const strip=myActive.length?`<div class="sect">Мои активные <span class="badge">${myActive.length}</span></div>
+    <div class="hscroll mini-strip">${myActive.map(g=>`<div class="mini-card" data-act="open-ga:${g.id}">
+      <div class="mini-top">${ico('i-clock','sm')}<span data-ends="${g.endsAt}">${timeLeft(g.endsAt)}</span></div>
+      <div class="mini-title">${esc(g.title)}</div></div>`).join('')}</div>`:'';
+
+  const filters=`<div class="hscroll filters">${types.map(t=>`<div class="chip ${state.feedFilter===t?'sel':''}" data-act="filter:${t}">${esc(t)}</div>`).join('')}</div>`;
+
   const cards=list.map(g=>{
-    const conds=g.conditions.map(c=>`<span class="pill d">${ico(condMeta(c).icon,'sm')}</span>`).join('');
+    const hot=(g.endsAt-Date.now())<DAY;
+    const conds=g.conditions.map(c=>`<span class="pill d cond-mini">${ico(condMeta(c).icon,'sm')}</span>`).join('');
     const cover=g.image?`<img src="${g.image}" alt=""><div class="veil"></div>`:'';
     return `<div class="gcard" data-act="open-ga:${g.id}">
-      <div class="gcover">${cover}<div class="timer">${ico('i-clock','sm')}<span data-ends="${g.endsAt}">${timeLeft(g.endsAt)}</span></div>
+      <div class="gcover">${cover}<div class="timer ${hot?'hot':''}">${ico('i-clock','sm')}<span data-ends="${g.endsAt}">${timeLeft(g.endsAt)}</span></div>
         <div class="ct">${esc(g.coverLabel||g.title)}</div></div>
       <div class="gbody"><h3>${esc(g.title)}</h3>
         <div class="gmeta"><span class="pill o">${ico('i-trophy','sm')}${esc(g.prizeType||'Приз')}</span>
@@ -143,9 +169,12 @@ ROUTES.feed=()=>{
         <div class="gcta"><button class="btn btn-primary btn-sm" data-act="open-ga:${g.id}">${esc(g.button)}</button></div>
       </div></div>`;
   }).join('');
-  return `<div class="h1">Активные розыгрыши</div>
-    <div class="lead">Выполняй условия и участвуй. Победители — случайно по таймеру.</div>
-    ${list.length?cards:emptyBlock('Пока нет активных розыгрышей')}`;
+
+  return `<div class="h1">Розыгрыши</div>
+    ${strip}
+    <div class="sect">Активные ${active.length?`<span class="badge">${active.length}</span>`:''}</div>
+    ${filters}
+    ${list.length?`<div class="feed-list">${cards}</div>`:emptyBlock('В этой категории пока пусто','',`<button class="btn btn-ghost" data-act="filter:Все">Показать все</button>`)}`;
 };
 
 /* ---------- КАРТОЧКА РОЗЫГРЫША ---------- */
@@ -157,9 +186,9 @@ ROUTES.giveaway=({id})=>{
       <div class="cx"><b>${esc(m.title)}</b><span>${esc(m.sub)}</span></div>
       <div class="st">${entered?ico('i-checkc'):ico('i-next','sm')}</div></div>`;}).join('');
   const cover=g.image?`<img src="${g.image}" alt=""><div class="veil"></div>`:'';
-  const live=g.status==='active';
-  return `<div class="gcover" style="border-radius:18px;overflow:hidden;margin-bottom:14px">${cover}
-      <div class="timer">${ico('i-clock','sm')}<span data-ends="${g.endsAt}">${live?timeLeft(g.endsAt):'завершён'}</span></div>
+  const live=g.status==='active'; const hot=live&&(g.endsAt-Date.now())<DAY;
+  return `<div class="gcover detail">${cover}
+      <div class="timer ${hot?'hot':''}">${ico('i-clock','sm')}<span data-ends="${g.endsAt}">${live?timeLeft(g.endsAt):'завершён'}</span></div>
       <div class="ct">${esc(g.coverLabel||g.title)}</div></div>
     <div class="h1">${esc(g.title)}</div>
     <div class="gmeta"><span class="pill o">${ico('i-trophy','sm')}${esc(g.prize)}</span>
@@ -167,8 +196,8 @@ ROUTES.giveaway=({id})=>{
     <p class="lead" style="margin-top:12px">${esc(g.text)}</p>
     <div class="sect">Условия участия</div>${conds}
     ${live?(entered
-      ?`<div class="card" style="text-align:center;color:var(--green);font-weight:700;margin-top:6px">${ico('i-checkc')} Вы участвуете</div>`
-      :`<button class="btn btn-primary" style="margin-top:6px" data-act="participate:${id}">${esc(g.button)}</button>`)
+      ?`<div class="card okcard">${ico('i-checkc')}<span>Вы участвуете</span></div>`
+      :`<button class="btn btn-primary cta-fixed" data-act="participate:${id}">${esc(g.button)}</button>`)
       :`<div class="card" style="text-align:center;color:var(--muted)">Розыгрыш завершён</div>
         <button class="btn btn-ghost" style="margin-top:10px" data-act="open-results:${id}">${ico('i-trophy')}Смотреть итоги</button>`}`;
 };
@@ -189,7 +218,7 @@ ROUTES.mine=()=>{
         <div class="meta"><h6>${esc(g.title)}</h6>
           <div class="ln"><span class="pill g" style="padding:3px 8px">${done}/${done} условий</span>${st}</div></div>
         <span class="arr">${ico('i-next')}</span></div>`;}).join('')
-      :emptyBlock('Ты пока нигде не участвуешь');
+      :emptyBlock('Ты пока нигде не участвуешь','Загляни в ленту — там есть что выиграть.',`<button class="btn btn-primary" data-act="go-feed">${ico('i-gift')}Смотреть розыгрыши</button>`);
   }else{
     const items=my.won.map(getGA).filter(Boolean);
     body=items.length?items.map(g=>`<div class="ga"><div class="thumb">${ico('i-trophy')}</div>
@@ -197,7 +226,7 @@ ROUTES.mine=()=>{
         <div class="ln"><span>${esc(g.title)}</span></div>
         <div class="ln" style="margin-top:4px"><span class="pill o">приз ждёт получения</span></div></div>
       <button class="btn btn-primary btn-sm" data-act="claim:${g.id}" style="width:auto;padding:9px 14px">Забрать</button></div>`).join('')
-      :emptyBlock('Выигрышей пока нет — но всё впереди');
+      :emptyBlock('Выигрышей пока нет','Участвуй активнее — победители выбираются случайно.',`<button class="btn btn-ghost" data-act="go-feed">К розыгрышам</button>`);
   }
   return `<div class="h1">Мои розыгрыши</div>${seg}${body}`;
 };
@@ -234,7 +263,7 @@ ROUTES.adminDash=()=>{
     if(!items.length)return '';
     return `<div class="sect">${label} <span class="badge">${items.length}</span></div>`+items.map(gaRow).join('');
   }).join('');
-  if(!body) body=emptyBlock('Розыгрышей пока нет');
+  if(!body) body=emptyBlock('Розыгрышей пока нет','Создай первый — это займёт минуту.','');
   return `<div class="h1">Админка</div>
     <button class="btn btn-primary" data-act="create">${ico('i-plus')}Создать розыгрыш</button>
     ${role()==='super'?`<button class="btn btn-ghost" style="margin-top:10px" data-act="open-team">${ico('i-users')}Команда и доступы</button>`:''}
@@ -294,7 +323,7 @@ ROUTES.results=({id})=>{
   const seedHash=(hashStr(g.id+(g.seedNonce||''))>>>0).toString(16).padStart(8,'0');
   return `<div class="stat-row" style="margin-bottom:10px"><span class="pill d">ID ${esc(g.id)}</span>
     <span>${g.status==='finished'?`<span class="pill g">завершён</span>`:`<span class="pill o">готов к итогам</span>`}</span></div>
-    <div class="h1">${ico('i-trophy')} Итоги</div>
+    <div class="h1">Итоги</div>
     <div class="lead">${esc(g.title)} · ${g.places} ${plural(g.places,'место','места','мест')}. Случайно среди выполнивших условия.</div>
     <div id="winlist">${w.map((x,i)=>`<div class="win ${i<3?'top'+(i+1):''}"><div class="num">${i+1}</div>
       <div><div class="u">${esc(x.u)}</div><div class="id">WL ${x.wl} · TG ${x.tg}</div></div></div>`).join('')}</div>
@@ -315,7 +344,7 @@ ROUTES.analytics=({id})=>{
   const total=Math.floor(rng()*1500)+300, passed=Math.floor(total*(0.6+rng()*0.2)), linkedN=Math.floor(total*(0.6+rng()*0.25));
   const dot=v=>v?'<span class="dotg">●</span>':'<span class="dotr">●</span>';
   const rows=[];for(let i=0;i<6;i++)rows.push({tg:maskId(rng,4),wl:maskId(rng,4),s:rng()>.15,p:rng()>.25,b:rng()>.3});
-  return `<div class="h1">${ico('i-chart')} Аналитика</div>
+  return `<div class="h1">Аналитика</div>
     <div class="lead">${esc(g.id)} · ${esc(g.title)}. Синхронизация с Google Таблицей.</div>
     <div class="kpis">
       <div class="kpi"><div class="v o">${total.toLocaleString('ru')}</div><div class="k">Всего участников</div></div>
@@ -346,7 +375,7 @@ ROUTES.team=()=>{
 
 /* ---------- УСПЕХ ПУБЛИКАЦИИ ---------- */
 ROUTES.published=({msg})=>`<div class="center"><div class="burst">${ico('i-checkc')}</div>
-  <div class="h1">Опубликовано!</div><div class="lead" style="max-width:300px">${esc(msg||'Розыгрыш создан.')}</div>
+  <div class="h1">Опубликовано</div><div class="lead" style="max-width:300px">${esc(msg||'Розыгрыш создан.')}</div>
   <button class="btn btn-primary" data-act="go-admin">${ico('i-grid')}В админку</button></div>`;
 
 /* ============================================================ КОНСТРУКТОР ============================================================ */
@@ -362,7 +391,7 @@ ROUTES.constructor=()=>{
     <div class="sect">Оформление</div>
     <div class="upload ${draft.image?'has':''}" data-act="pick-image">${ico('i-img')}<span id="upLabel">${draft.image?'Изображение выбрано':'Выбрать обложку'}</span></div>
     <div class="field" style="margin-top:12px"><label>Текст розыгрыша</label>
-      <textarea class="textarea" data-model="text" placeholder="Разыгрываем iPhone 17 Pro! Условия — ниже 👇">${esc(draft.text)}</textarea></div>
+      <textarea class="textarea" data-model="text" placeholder="Разыгрываем iPhone 17 Pro. Условия — ниже.">${esc(draft.text)}</textarea></div>
     <div class="field"><label>Текст кнопки</label>
       <div class="chips" id="btnChips">
         ${['УЧАСТВОВАТЬ','ПРИНЯТЬ УЧАСТИЕ','УЧАСТВУЮ'].map(b=>`<div class="chip ${draft.button===b?'sel':''}" data-act="pick-btn:${b}">${b}</div>`).join('')}
@@ -432,13 +461,16 @@ function refreshPreviewLive(){ const host=$('.preview'); if(host&&draft) host.ou
 function handle(act,arg,node){
   haptic();
   switch(act){
+    case 'start': localStorage.setItem(K_ONB,'1'); setTab('feed'); break;
     case 'open-ga': push({name:'giveaway',params:{id:arg}}); break;
     case 'open-manage': push({name:'manage',params:{id:arg}}); break;
     case 'open-results': push({name:'results',params:{id:arg}}); break;
     case 'open-analytics': push({name:'analytics',params:{id:arg}}); break;
     case 'open-team': push({name:'team'}); break;
     case 'go-admin': setTab('admin'); break;
+    case 'go-feed': setTab('feed'); break;
 
+    case 'filter': state.feedFilter=arg; render(); break;
     case 'seg': mineSeg=arg; render(); break;
     case 'role': setRole(arg); ping('Роль: '+ROLE_LABEL[arg]); setTab(role()==='user'?'feed':'admin'); break;
     case 'link': case 'unlink': toggleLink(act); break;
@@ -498,6 +530,7 @@ function buildFromDraft(id,createdAt){
   const m=(draft.dateStr||'').match(/(\d{2})\.(\d{2})\.(\d{2})\s+(\d{1,2}):(\d{2})/);
   if(m) endsAt=new Date(2000+ +m[3],+m[2]-1,+m[1],+m[4],+m[5]).getTime();
   else if(draft.dateStr==='Сейчас') endsAt=Date.now()+DAY;
+  const ptype=draft.conditions.length?'Приз':'Приз';
   return {id,title:draftTitle(),prize:draftTitle(),prizeType:'Приз',coverLabel:draftTitle(),
     text:draft.text,image:draft.image,button:draft.button,conditions:JSON.parse(JSON.stringify(draft.conditions)),
     places:+draft.places||1,pubChannels:draft.pubChannels.slice(),endsAt,createdAt,status:'active',owner:'me'};
@@ -513,7 +546,7 @@ function duplicate(id){const g=getGA(id);if(!g)return;draft=freshDraft();draft.t
   draft.conditions=JSON.parse(JSON.stringify(g.conditions));draft.places=g.places;draft.pubChannels=g.pubChannels.slice();
   push({name:'constructor'});ping('Создана копия — отредактируйте и опубликуйте');}
 function crosspost(id){
-  openSheet(`<h3>${ico('i-mega')} Кросспостинг</h3><p>Выберите каналы, где наш бот админ — туда уйдёт карточка розыгрыша.</p>
+  openSheet(`<h3>Кросспостинг</h3><p>Выберите каналы, где наш бот админ — туда уйдёт карточка розыгрыша.</p>
     <div class="chips" id="cpChips">${PUB_CHANNELS.map(c=>`<div class="chip block" data-cp="${c}">${ico('i-mega','sm')}${c}</div>`).join('')}</div>
     <button class="btn btn-primary" style="margin-top:14px" id="cpGo">Запостить</button>
     <div style="height:8px"></div><button class="btn btn-ghost" data-act="modal-close">Отмена</button>`);
@@ -530,7 +563,7 @@ function addAdmin(){const el=$('#newAdmin');if(!el||!el.value.trim())return;cons
 /* ---------- участие + авторизация ---------- */
 function participate(id){ const g=getGA(id); if(!g)return; if(!link().linked){ openAuth(g); return; } runChecks(g); }
 function openAuth(g){
-  openSheet(`<h3>${ico('i-shield')} Вход в Winline</h3>
+  openSheet(`<h3>Вход в Winline</h3>
     <p>Войдите в личный кабинет, чтобы привязать аккаунт${g?' и подтвердить участие':''}.</p>
     <div class="field"><label>Логин / ID Winline</label><input class="input" id="wlLogin" placeholder="Ваш Winline ID"></div>
     <div class="field"><label>Пароль</label><input class="input" type="password" id="wlPass" placeholder="••••••••"></div>
@@ -545,7 +578,7 @@ function openAuth(g){
 }
 function runChecks(g){
   const items=[]; g.conditions.forEach(c=>items.push(condMeta(c).title)); if(!items.length) items.push('Привязка аккаунта');
-  openSheet(`<h3>${ico('i-loader')} Проверяем условия…</h3><p>Привязываем Winline ID к Telegram и проверяем выполнение.</p>
+  openSheet(`<h3>Проверяем условия…</h3><p>Привязываем Winline ID к Telegram и проверяем выполнение.</p>
     <div class="check-list" id="checks">${items.map(t=>`<div class="check wait"><span>${ico('i-clock','sm')}</span>${esc(t)}<span class="st">${ico('i-loader','sm spin')}</span></div>`).join('')}</div>`);
   const rows=$$('#checks .check'); let i=0;
   const iv=setInterval(()=>{ if(i>=rows.length){clearInterval(iv);finishParticipate(g);return;}
@@ -555,14 +588,14 @@ function finishParticipate(g){
   const my=MY(); if(!my.entered.includes(g.id)){my.entered.push(g.id);sj(K_MY,my);}
   setTimeout(()=>{
     openSheet(`<div class="center" style="min-height:auto;padding:8px 0"><div class="burst">${ico('i-checkc')}</div>
-      <h3>Вы участвуете! 🎉</h3><p style="text-align:center">Все условия выполнены. Удачи в розыгрыше «${esc(g.title)}»!</p>
+      <h3>Вы участвуете</h3><p style="text-align:center">Все условия выполнены. Удачи в розыгрыше «${esc(g.title)}»!</p>
       <button class="btn btn-primary" data-act="modal-close">Отлично</button></div>`);
   },350);
   setTimeout(()=>{ if(state.stack[state.stack.length-1].name==='giveaway') render(); },360);
 }
 
-/* ---------- empty ---------- */
-function emptyBlock(t){return `<div class="empty">${ico('i-gift')}<div>${esc(t)}</div></div>`;}
+/* ---------- empty state ---------- */
+function emptyBlock(title,desc,cta){return `<div class="empty">${ico('i-gift')}<div class="et">${esc(title)}</div>${desc?`<div class="ed">${esc(desc)}</div>`:''}${cta||''}</div>`;}
 
 /* ---------- file input (обложка) ---------- */
 $('#fileInput').addEventListener('change',e=>{
@@ -576,4 +609,5 @@ setInterval(()=>{ $$('[data-ends]').forEach(elm=>{const t=+elm.dataset.ends; elm
 
 /* ---------- init ---------- */
 seed();
-setTab('feed');
+if(localStorage.getItem(K_ONB)){ setTab('feed'); }
+else { state.tab=null; state.stack=[{name:'onboarding'}]; render(); }
