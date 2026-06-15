@@ -335,3 +335,40 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font
 .faq{background:var(--surface-grad);border:1px solid var(--stroke);border-radius:14px;padding:14px;margin-bottom:10px}
 .faq b{display:block;font-size:14px;font-weight:700;margin-bottom:6px}
 .faq p{font-size:13px;color:var(--muted);line-height:1.55}
+
+/* ============================================================ v5: плитки действий, ссылки, обложки в списках ============================================================ */
+/* плитки действий (управление/карточка) */
+.act-grid{display:grid;gap:10px}
+.act-grid.two{grid-template-columns:1fr 1fr}
+.act-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;background:var(--surface-grad);
+  border:1px solid var(--stroke);border-radius:14px;padding:15px 10px;cursor:pointer;font-weight:700;font-size:12.5px;color:#fff;transition:.15s;font-family:var(--font)}
+.act-tile .icon{width:22px;height:22px;color:var(--brand)}
+.act-tile:hover{border-color:var(--brand)}
+.act-tile:active{transform:scale(.98)}
+.act-tile.danger{background:rgba(255,69,58,.08)}
+.act-tile.danger .icon{color:var(--red)}
+.act-tile.danger:hover{border-color:var(--red)}
+.act-tile.primary{background:linear-gradient(135deg,var(--brand),var(--brand-600));border-color:transparent;color:#fff}
+.act-tile.primary .icon{color:#fff}
+
+/* гиперссылки в тексте */
+.ln-a{color:var(--brand-300);text-decoration:underline;text-underline-offset:2px}
+
+/* обложка как thumbnail в списках */
+.thumb.img{background-size:cover;background-position:center}
+.ga .thumb .display{color:#fff}
+
+/* ============================================================ v5.1 полиш (по taste, бренд без изменений) ============================================================ */
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:8px}
+.btn:focus-visible,.tabbar button:focus-visible,.chip:focus-visible,.act-tile:focus-visible{outline-offset:3px}
+/* мягкие тинтованные тени вместо чёрных */
+.card,.gcard,.ga,.kpi,.prow,.act-tile,.preview{box-shadow:0 8px 26px -20px rgba(0,0,0,.8)}
+.btn-primary{box-shadow:0 10px 24px -12px rgba(242,111,30,.55)}
+/* тактильный отклик */
+.gcard,.ga,.act-tile,.mini-card,.prow.link-row{transition:border-color .15s,transform .12s,box-shadow .15s}
+.gcard:active,.ga:active,.act-tile:active,.mini-card:active{transform:scale(.992)}
+/* уважение к reduced-motion */
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
+  .timer.hot{animation:none}
+}
