@@ -39,6 +39,11 @@ const lj=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse
 const sj=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const DAY=864e5, HR=36e5;
 function seed(){
+  // одноразовая очистка демо-данных прошлых версий (чтобы у дефолт-юзера было пусто)
+  if(!localStorage.getItem('wl_clean_v1')){
+    sj(K_GA,[]); sj(K_MY,{entered:[],won:[]}); sj(K_RECENT,[MAIN_CHANNEL]); localStorage.removeItem(K_DRAFT);
+    localStorage.setItem('wl_clean_v1','1');
+  }
   if(localStorage.getItem(K_SEED)) return;
   if(lj(K_GA,null)==null) sj(K_GA,[]);
   if(lj(K_MY,null)==null) sj(K_MY,{entered:[],won:[]});
@@ -299,6 +304,7 @@ function gaRow(g,showOwner){
 /* ---------- АДМИН: УПРАВЛЕНИЕ (плитки) ---------- */
 function tile(act,icon,label,cls){return `<button class="act-tile ${cls||''}" data-act="${act}">${ico(icon)}${label}</button>`;}
 ROUTES.manage=({id})=>{
+  if(!isAdmin()) return emptyBlock('Недоступно','Раздел доступен только администратору.','');
   const g=getGA(id); if(!g)return emptyBlock('Не найдено');
   const cnt=(g.stats&&g.stats.total)||0;
   const live=g.status==='active'; const paused=g.status==='paused'; const finished=g.status==='finished';
@@ -454,6 +460,7 @@ function summaryHtml(){
   return `<div class="summary">${rows.map(r=>`<div class="row"><span>${r[0]}</span><b>${esc(r[1])}</b></div>`).join('')}</div>`;
 }
 ROUTES.constructor=()=>{
+  if(!isAdmin()) return emptyBlock('Недоступно','Создание доступно только администратору.','');
   if(!draft) draft=freshDraft();
   const head=`<div class="h1">${draft.editId?'Редактирование':'Новый розыгрыш'}</div>${stepper(cstep)}`;
   let body='';
