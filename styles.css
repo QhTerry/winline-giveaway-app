@@ -478,3 +478,20 @@ body{background:#0A0A0C}
 .skel-line{height:14px;margin:10px 0;border-radius:8px;border:0}
 .skel-card{height:140px;margin-bottom:14px}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ============================================================ ПЕРФ-ОПТИМИЗАЦИЯ (плавность в Telegram WebView) ============================================================ */
+/* backdrop-filter оставляем только на «хроме» (шапка/таб-бар/модалки) — он самый тяжёлый.
+   Карточки/списки получают полупрозрачную заливку без блюра: вид стекла сохранён, GPU не нагружается. */
+.card,.gcard,.ga,.kpi,.prow,.act-tile,.cond,.preview,.mini-card,.faq,.cond-edit,
+.input,.textarea,select,.btn-ghost{ -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+.card,.gcard,.ga,.kpi,.prow,.act-tile,.cond,.preview,.mini-card,.faq,.cond-edit{ background:rgba(255,255,255,.05) }
+.input,.textarea,select{ background:rgba(255,255,255,.05) }
+.btn-ghost{ background:rgba(255,255,255,.075) }
+.hdr,.tabbar{ -webkit-backdrop-filter:blur(14px) saturate(130%); backdrop-filter:blur(14px) saturate(130%) }
+.sheet{ -webkit-backdrop-filter:blur(18px) saturate(130%); backdrop-filter:blur(18px) saturate(130%) }
+.toast{ -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px) }
+.app::before{ will-change:transform }
+/* изоляция отрисовки карточек — меньше переотрисовок при скролле длинных списков */
+.gcard,.ga,.card,.kpi,.prow,.act-tile,.cond,.mini-card{ contain:content }
+/* на маломощных устройствах вовсе отключаем фоновую анимацию */
+@media (prefers-reduced-motion: reduce){ .app::before{animation:none} }

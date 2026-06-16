@@ -104,7 +104,10 @@ backBtn.addEventListener('click',()=>{haptic();pop();});
 
 /* открытие экрана с короткой загрузкой-скелетоном */
 let fxLoading=false;
-function openFx(route){ fxLoading=true; push(route); setTimeout(()=>{ fxLoading=false; const cur=state.stack[state.stack.length-1]; if(cur&&cur.name===route.name) render(); }, 480); }
+function openFx(route){
+  if(!(window.WL_API && WL_API.enabled())){ push(route); return; } // демо — открываем мгновенно
+  fxLoading=true; push(route); setTimeout(()=>{ fxLoading=false; const cur=state.stack[state.stack.length-1]; if(cur&&cur.name===route.name) render(); }, 420);
+}
 function skeleton(kind){
   const line=w=>`<div class="skel skel-line" style="width:${w}"></div>`;
   if(kind==='giveaway') return `<div class="skel skel-card"></div>${line('55%')}${line('90%')}${line('80%')}<div style="height:14px"></div><div class="skel" style="height:48px;border-radius:14px;border:0"></div>`;
@@ -213,7 +216,7 @@ ROUTES.giveaway=({id})=>{
       <div class="cx"><b>${esc(m.title)}</b><span>${esc(m.sub)}</span></div>
       <div class="st">${entered?ico('i-checkc'):ico('i-next','sm')}</div></div>`;}).join('')
     :`<div class="hint">${ico('i-info','sm')}Особых условий нет - участвуют все авторизованные.</div>`;
-  const cover=g.image?`<img src="${g.image}" alt=""><div class="veil"></div>`:'';
+  const cover=g.image?`<img src="${g.image}" alt="" loading="lazy" decoding="async"><div class="veil"></div>`:'';
   const live=g.status==='active'; const hot=live&&(g.endsAt-Date.now())<DAY;
   return `<div class="gcover detail">${cover}
       <div class="timer ${hot?'hot':''}">${ico('i-clock','sm')}<span data-ends="${g.endsAt}">${live?timeLeft(g.endsAt):'завершён'}</span></div>
