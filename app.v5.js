@@ -32,8 +32,9 @@ function linkify(t){
 }
 
 /* ---------- storage ---------- */
-const K_GA='wl_giveaways_v2', K_MY='wl_my_v1', K_ROLE='wl_role', K_LINK='wl_link', K_ADMINS='wl_admins', K_ONB='wl_onboarded', K_SEED='wl_seed_v5', K_RECENT='wl_recent_chan';
+const K_GA='wl_giveaways_v2', K_MY='wl_my_v1', K_ROLE='wl_role', K_LINK='wl_link', K_ADMINS='wl_admins', K_ONB='wl_onboarded', K_SEED='wl_seed_v5', K_RECENT='wl_recent_chan', K_DRAFT='wl_draft_temp';
 const MAIN_CHANNEL='@winlinesports';
+const BOT_USERNAME=(window.WINLINE_CONFIG&&window.WINLINE_CONFIG.botUsername)||'winline_giveaway_bot';
 const lj=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}};
 const sj=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const DAY=864e5, HR=36e5;
@@ -133,6 +134,8 @@ document.addEventListener('click',e=>{
   handle(act,arg,a);
 });
 document.addEventListener('input',e=>{
+  if(e.target.id==='adminSearch'){ const q=e.target.value.trim().toLowerCase();
+    $$('#view .ga').forEach(r=>{ r.style.display=r.textContent.toLowerCase().includes(q)?'':'none'; }); return; }
   const m=e.target.closest('[data-model]'); if(m){ modelUpdate(m.dataset.model,e.target.value,m); return; }
   const c=e.target.closest('[data-cond]'); if(c&&draft){const [i,f]=c.dataset.cond.split(':');draft.conditions[+i][f]=e.target.value; if(f==='category')paintConds();}
 });
@@ -159,7 +162,9 @@ ROUTES.onboarding=()=>{
       ${feat('i-trophy','Честный розыгрыш','Случайный выбор с проверкой результата')}
       ${feat('i-ticket','Всё в «Моих»','Твои участия и выигрыши в одном месте')}
     </div>
-    <div class="onb-cta"><button class="btn btn-primary" data-act="start">Начать</button></div>
+    <div class="onb-cta"><button class="btn btn-primary" data-act="start">Начать</button>
+      <div style="height:10px"></div>
+      <button class="btn btn-ghost" data-act="link">${ico('i-shield')}Привязать Winline</button></div>
   </div>`;
 };
 
@@ -211,8 +216,8 @@ ROUTES.giveaway=({id})=>{
     <div class="h1">${esc(g.title)}</div>
     <div class="gmeta"><span class="pill o">${ico('i-trophy','sm')}${esc(g.prize)}</span>
       <span class="pill d">${ico('i-users','sm')}${g.places} ${plural(g.places,'место','места','мест')}</span></div>
-    <div class="act-grid two" style="margin-top:12px">
-      <button class="act-tile" data-act="open-post:${id}">${ico('i-mega')}Пост в канале</button>
+    <div class="act-grid ${g.postUrl?'two':''}" style="margin-top:12px">
+      ${g.postUrl?`<button class="act-tile" data-act="open-post:${id}">${ico('i-mega')}Пост в канале</button>`:''}
       <button class="act-tile" data-act="rules">${ico('i-info')}Правила</button></div>
     <p class="lead" style="margin-top:14px">${linkify(g.text)}</p>
     <div class="sect">Условия участия</div>${conds}
@@ -279,6 +284,7 @@ ROUTES.adminDash=()=>{
   return `<div class="h1">Админка</div>
     <button class="btn btn-primary" data-act="create">${ico('i-plus')}Создать розыгрыш</button>
     ${sup?`<button class="btn btn-ghost" style="margin-top:10px" data-act="open-team">${ico('i-users')}Команда и доступы</button>`:''}
+    ${mine.length>3?`<div class="field" style="margin:16px 0 0"><input class="input" id="adminSearch" placeholder="Поиск по названию или ID"></div>`:''}
     ${body}`;
 };
 function gaRow(g,showOwner){
@@ -294,13 +300,15 @@ function gaRow(g,showOwner){
 function tile(act,icon,label,cls){return `<button class="act-tile ${cls||''}" data-act="${act}">${ico(icon)}${label}</button>`;}
 ROUTES.manage=({id})=>{
   const g=getGA(id); if(!g)return emptyBlock('Не найдено');
-  const rng=mulberry32(hashStr(g.id+'p')); const cnt=g.status==='finished'?Math.floor(rng()*1500)+300:Math.floor(rng()*800)+40;
+  const cnt=(g.stats&&g.stats.total)||0;
   const live=g.status==='active'; const paused=g.status==='paused'; const finished=g.status==='finished';
   const conds=g.conditions.map(c=>{const m=condMeta(c);return `<span class="pill d">${ico(m.icon,'sm')}${esc(m.title)}</span>`;}).join(' ')||'<span class="pill d">без условий</span>';
+  const del=tile('delete:'+id,'i-trash','Удалить','danger');
   let manageTiles='';
-  if(live){ manageTiles=tile('pause:'+id,'i-pause','Пауза')+tile('finish:'+id,'i-stop','Завершить','danger')+tile('edit:'+id,'i-edit','Изменить')+tile('crosspost:'+id,'i-mega','Кросспост'); }
-  else if(paused){ manageTiles=tile('resume:'+id,'i-bolt','Возобновить','primary')+tile('finish:'+id,'i-stop','Завершить','danger')+tile('edit:'+id,'i-edit','Изменить')+tile('crosspost:'+id,'i-mega','Кросспост'); }
-  else { manageTiles=tile('duplicate:'+id,'i-copy','Дублировать')+tile('edit:'+id,'i-edit','Изменить')+tile('crosspost:'+id,'i-mega','Кросспост'); }
+  if(live){ manageTiles=tile('pause:'+id,'i-pause','Пауза')+tile('finish:'+id,'i-stop','Завершить','danger')+tile('edit:'+id,'i-edit','Изменить')+tile('crosspost:'+id,'i-share','Кросспост')+tile('share:'+id,'i-link','Поделиться')+del; }
+  else if(paused){ manageTiles=tile('resume:'+id,'i-play','Возобновить','primary')+tile('finish:'+id,'i-stop','Завершить','danger')+tile('edit:'+id,'i-edit','Изменить')+tile('crosspost:'+id,'i-share','Кросспост')+tile('share:'+id,'i-link','Поделиться')+del; }
+  else { manageTiles=tile('duplicate:'+id,'i-copy','Дублировать')+tile('edit:'+id,'i-edit','Изменить')+tile('crosspost:'+id,'i-share','Кросспост')+tile('share:'+id,'i-link','Поделиться')+del; }
+  const topTiles=(g.postUrl?tile('open-post:'+id,'i-mega','Пост в канале'):'')+tile('preview:'+id,'i-eye','Как участник');
   return `<div class="stat-row" style="margin-bottom:12px"><span class="pill d">ID ${esc(g.id)}</span>
     <span>${live?`<span class="pill o">● идёт</span>`:paused?`<span class="pill r">на паузе</span>`:`<span class="pill g">завершён</span>`}</span></div>
     <div class="h1">${esc(g.title)}</div>
@@ -309,15 +317,10 @@ ROUTES.manage=({id})=>{
       <div class="display" style="font-size:30px">${cnt.toLocaleString('ru')}</div></div>
       <span class="pill ${live?'o':'d'}">${live?'● live':'итог'}</span></div>
       <div class="gmeta" style="margin:12px 0 0">${conds}</div></div>
-
-    <div class="act-grid two" style="margin-top:12px">
-      ${tile('open-post:'+id,'i-mega','Пост в канале')}${tile('preview:'+id,'i-eye','Как участник')}</div>
-
+    <div class="act-grid ${g.postUrl?'two':''}" style="margin-top:12px">${topTiles}</div>
     ${finished?`<button class="btn btn-primary" style="margin-top:14px" data-act="open-results:${id}">${ico('i-trophy')}Подвести итоги</button>`:''}
-
     <div class="sect">Управление</div>
     <div class="act-grid two">${manageTiles}</div>
-
     <div class="sect">Аналитика</div>
     <button class="btn btn-ghost" data-act="open-analytics:${id}">${ico('i-chart')}Участники и выгрузка</button>`;
 };
@@ -328,19 +331,24 @@ function maskId(rng,len){let s='';for(let i=0;i<len;i++)s+=Math.floor(rng()*10);
 function genWinners(g){const rng=mulberry32(hashStr(g.id+(g.seedNonce||'')));const n=Math.min(g.places||1,12);const out=[],used=new Set();
   for(let i=0;i<n;i++){let nm;do{nm=NAMES[Math.floor(rng()*NAMES.length)]+'_'+Math.floor(rng()*90+10);}while(used.has(nm));used.add(nm);
     out.push({u:'@'+nm,wl:maskId(rng,4),tg:maskId(rng,4)});}return out;}
+let winnersExpanded=false;
 ROUTES.results=({id})=>{
   if(fxLoading) return skeleton('results');
   const g=getGA(id); if(!g)return emptyBlock('Не найдено');
   const admin=isAdmin();
-  const w=genWinners(g); const extra=(g.places||1)-w.length;
-  const seedHash=(hashStr(g.id+(g.seedNonce||''))>>>0).toString(16).padStart(8,'0');
+  const w=g.winners||[];
+  const shown=winnersExpanded?w:w.slice(0,10);
+  const seedHash=g.seedHash||((hashStr(g.id)>>>0).toString(16).padStart(8,'0'));
+  const winBlock = w.length
+    ? `<div id="winlist">${shown.map((x,i)=>`<div class="win ${i<3?'top'+(i+1):''}"><div class="num">${i+1}</div>
+        <div><div class="u">${esc(x.u||x.username||('@'+(x.tg||'')))}</div>${admin?`<div class="id">WL ${esc(x.wl||'···')} · TG ${esc(x.tg||'···')}</div>`:''}</div></div>`).join('')}</div>
+       ${(!winnersExpanded&&w.length>shown.length)?`<button class="btn btn-ghost" data-act="expand-win" style="margin-top:4px">${ico('i-down')}Показать всех (${w.length})</button>`:''}`
+    : `<div class="card" style="text-align:center;color:var(--muted);font-size:13px">${g.status==='finished'?'Победителей нет — не было участников, прошедших условия.':'Итоги ещё не подведены. Победители появятся после завершения.'}</div>`;
   return `<div class="stat-row" style="margin-bottom:10px"><span class="pill d">ID ${esc(g.id)}</span>
     <span>${g.status==='finished'?`<span class="pill g">завершён</span>`:`<span class="pill o">готов к итогам</span>`}</span></div>
     <div class="h1">Итоги</div>
     <div class="lead">${esc(g.title)} · ${g.places} ${plural(g.places,'место','места','мест')}. Случайно среди выполнивших условия.</div>
-    <div id="winlist">${w.map((x,i)=>`<div class="win ${i<3?'top'+(i+1):''}"><div class="num">${i+1}</div>
-      <div><div class="u">${esc(x.u)}</div>${admin?`<div class="id">WL ${x.wl} · TG ${x.tg}</div>`:''}</div></div>`).join('')}</div>
-    ${extra>0?`<div class="card" style="text-align:center;color:var(--muted);font-size:12.5px">… и ещё ${extra} ${plural(extra,'победитель','победителя','победителей')}</div>`:''}
+    ${winBlock}
     <div class="card" style="margin-top:12px"><div style="font-size:11.5px;color:var(--muted)">Проверочный хеш (provably-fair)</div>
       <div class="mono" style="font-size:13px;margin-top:4px;color:var(--brand-300)">${seedHash}</div>
       <div class="hint" style="margin-top:6px">${ico('i-info','sm')}Сид публикуется после итогов - любой может пересчитать список.</div></div>
@@ -348,7 +356,7 @@ ROUTES.results=({id})=>{
       ?`<button class="btn btn-primary" style="margin-top:12px" data-act="pub-results:${id}">${ico('i-mega')}Опубликовать итоги</button>
         <div class="act-grid two" style="margin-top:10px">
           ${tile('reroll:'+id,'i-loader','Рерол')}${tile('open-analytics:'+id,'i-chart','Аналитика')}</div>`
-      :`<button class="btn btn-ghost" style="margin-top:12px" data-act="open-post:${id}">${ico('i-mega')}Пост с итогами в канале</button>`}`;
+      :(g.postUrl?`<button class="btn btn-ghost" style="margin-top:12px" data-act="open-post:${id}">${ico('i-mega')}Пост с итогами в канале</button>`:'')}`;
 };
 
 /* ---------- АДМИН: АНАЛИТИКА (только админ) ---------- */
@@ -356,21 +364,22 @@ ROUTES.analytics=({id})=>{
   if(fxLoading) return skeleton('analytics');
   if(!isAdmin()) return emptyBlock('Недоступно','Аналитика доступна только администратору.','');
   const g=getGA(id); if(!g)return emptyBlock('Не найдено');
-  const rng=mulberry32(hashStr(g.id+'a'));
-  const total=Math.floor(rng()*1500)+300, passed=Math.floor(total*(0.6+rng()*0.2)), linkedN=Math.floor(total*(0.6+rng()*0.25));
+  const s=g.stats||{total:0,passed:0,linked:0,rows:[]};
+  const rows=s.rows||[];
   const dot=v=>v?'<span class="dotg">●</span>':'<span class="dotr">●</span>';
-  const rows=[];for(let i=0;i<6;i++)rows.push({tg:maskId(rng,4),wl:maskId(rng,4),s:rng()>.15,p:rng()>.25,b:rng()>.3});
   return `<div class="h1">Аналитика</div>
     <div class="lead">${esc(g.id)} · ${esc(g.title)}. Синхронизация с Google Таблицей.</div>
     <div class="kpis">
-      <div class="kpi"><div class="v o">${total.toLocaleString('ru')}</div><div class="k">Всего участников</div></div>
-      <div class="kpi"><div class="v g">${passed.toLocaleString('ru')}</div><div class="k">Прошли условия</div></div>
-      <div class="kpi"><div class="v">${linkedN.toLocaleString('ru')}</div><div class="k">Привязали Winline</div></div>
-      <div class="kpi"><div class="v">${g.places}</div><div class="k">Победителей</div></div></div>
+      <div class="kpi"><div class="v o">${(s.total||0).toLocaleString('ru')}</div><div class="k">Всего участников</div></div>
+      <div class="kpi"><div class="v g">${(s.passed||0).toLocaleString('ru')}</div><div class="k">Прошли условия</div></div>
+      <div class="kpi"><div class="v">${(s.linked||0).toLocaleString('ru')}</div><div class="k">Привязали Winline</div></div>
+      <div class="kpi"><div class="v">${g.places}</div><div class="k">Мест</div></div></div>
+    ${(s.total||0)===0?`<div class="hint">${ico('i-info','sm')}Данные появятся, когда пойдут участники.</div>`:''}
     <div class="sect">Участники</div>
     <div class="card" style="padding:8px 12px;overflow-x:auto"><table class="tbl">
       <tr><th>TG</th><th>WL ID</th><th>Подп.</th><th>Промо</th><th>Ставка</th></tr>
-      ${rows.map(r=>`<tr><td>${r.tg}</td><td>${r.wl}</td><td>${dot(r.s)}</td><td>${dot(r.p)}</td><td>${dot(r.b)}</td></tr>`).join('')}</table></div>
+      ${rows.length?rows.map(r=>`<tr><td>${esc(r.tg)}</td><td>${esc(r.wl)}</td><td>${dot(r.s)}</td><td>${dot(r.p)}</td><td>${dot(r.b)}</td></tr>`).join('')
+        :`<tr><td colspan="5" style="text-align:center;color:var(--muted-2);padding:18px">Пока нет участников</td></tr>`}</table></div>
     <div class="hint" style="gap:16px"><span><span class="dotg">●</span> выполнено</span><span><span class="dotr">●</span> нет</span></div>
     <button class="btn btn-primary" style="margin-top:14px" data-act="export:${id}">${ico('i-sheet')}Выгрузить в Google Sheets</button>`;
 };
@@ -381,24 +390,42 @@ ROUTES.team=()=>{
   if(role()!=='super') return emptyBlock('Недоступно','Управление командой доступно супер-админу.','');
   const admins=lj(K_ADMINS,[]);
   const rows=admins.map((a,i)=>{
+    const sup=a.role==='Супер-админ';
     const right=a.self?`<span class="pill o">вы</span>`
       :`<div style="display:flex;gap:6px;flex:0 0 auto">
-          <button class="btn btn-ghost btn-sm" data-act="admrole:${i}" style="width:auto">${a.role==='Супер-админ'?'→ Админ':'→ Супер'}</button>
-          <button class="btn btn-ghost btn-sm" data-act="rm-admin:${i}" style="width:auto">${ico('i-x','sm')}</button></div>`;
-    return `<div class="prow"><div class="ci">${ico(a.role==='Супер-админ'?'i-shield':'i-user')}</div>
-      <div class="px"><b>${esc(a.u)}</b><span>${esc(a.role)}</span></div>${right}</div>`;
+          <button class="btn btn-ghost btn-sm" data-act="admrole:${i}" style="width:auto;padding:8px 11px">${sup?'↓ Админ':'↑ Супер'}</button>
+          <button class="btn btn-danger btn-sm" data-act="rm-admin:${i}" style="width:auto;padding:8px 11px">${ico('i-trash','sm')}</button></div>`;
+    return `<div class="prow"><div class="ci">${ico(sup?'i-shield':'i-user')}</div>
+      <div class="px"><b>${esc(a.u)}</b><span>${esc(a.role)}${a.tgId?(' · ID '+esc(a.tgId)):''}</span></div>${right}</div>`;
   }).join('');
   return `<div class="h1">Команда</div>
-    <div class="lead">Доступ по Telegram @username или ID. Админ ведёт свои розыгрыши; супер-админ видит все и управляет командой.</div>
+    <div class="lead">Доступ выдаётся по Telegram ID. Админ ведёт свои розыгрыши; супер-админ видит все и управляет командой.</div>
     ${rows}
-    <div class="sect">Выдать доступ</div>
-    <div class="field"><label>Telegram @username или ID</label><input class="input" id="newAdmin" placeholder="@user или 123456789"></div>
-    <div class="seg">
-      <button class="${newAdminRole==='Админ'?'on':''}" data-act="setrole:Админ">Админ</button>
-      <button class="${newAdminRole==='Супер-админ'?'on':''}" data-act="setrole:Супер-админ">Супер-админ</button></div>
-    <button class="btn btn-primary" data-act="add-admin">${ico('i-plus')}Выдать доступ</button>
-    <div class="hint" style="margin-top:10px">${ico('i-info','sm')}Админ - для модераторов инфлюенсеров (розыгрыши в их каналах). Супер-админ - для стаффа Winline.</div>`;
+    <button class="btn btn-primary" style="margin-top:14px" data-act="grant-open">${ico('i-plus')}Выдать доступ</button>`;
 };
+function grantSheet(){
+  openSheet(`<h3>${ico('i-shield')} Выдать доступ</h3>
+    <p>Доступ привязывается к Telegram ID. Узнать ID — через @userinfobot. Роль можно изменить позже.</p>
+    <div class="field"><label>Telegram ID</label><input class="input" id="grTg" inputmode="numeric" placeholder="напр. 813009638"></div>
+    <div class="field"><label>@username (необязательно)</label><input class="input" id="grUser" placeholder="@username"></div>
+    <div class="field"><label>Роль</label><div class="seg" id="grRole">
+      <button class="on" data-gr="Админ">Админ</button><button data-gr="Супер-админ">Супер-админ</button></div></div>
+    <button class="btn btn-primary" id="grGo">${ico('i-plus')}Выдать доступ</button>
+    <div style="height:8px"></div><button class="btn btn-ghost" data-act="modal-close">Отмена</button>
+    <div class="hint" style="margin-top:10px">${ico('i-info','sm')}Админ — модераторам инфлюенсеров. Супер-админ — стаффу Winline.</div>`);
+  let r='Админ';
+  $$('#grRole button').forEach(b=>b.onclick=()=>{r=b.dataset.gr;$$('#grRole button').forEach(x=>x.classList.toggle('on',x===b));haptic();});
+  $('#grGo').onclick=()=>{
+    const tgid=($('#grTg').value||'').trim();
+    if(!/^\d{4,}$/.test(tgid)){ ping('Введите числовой Telegram ID'); return; }
+    let u=($('#grUser').value||'').trim(); if(u&&!u.startsWith('@'))u='@'+u;
+    const a=lj(K_ADMINS,[]); const ex=a.find(x=>x.tgId===tgid);
+    if(ex){ ex.role=r; if(u)ex.u=u; } else a.push({u:u||('ID '+tgid),tgId:tgid,role:r});
+    sj(K_ADMINS,a);
+    // TODO:BACKEND - WL_API.team({action:'add',tgId:tgid,username:u,role:r==='Супер-админ'?'SUPER':'ADMIN'})
+    closeSheet(); render(); haptic(); ping(r+' выдан');
+  };
+}
 
 /* ---------- УСПЕХ ---------- */
 ROUTES.published=({msg})=>`<div class="center"><div class="burst">${ico('i-checkc')}</div>
@@ -407,7 +434,9 @@ ROUTES.published=({msg})=>`<div class="center"><div class="burst">${ico('i-check
 
 /* ============================================================ КОНСТРУКТОР ============================================================ */
 let draft=null;
-function freshDraft(){return {text:'',image:null,button:'УЧАСТВОВАТЬ',conditions:[],places:'',pubChannels:[MAIN_CHANNEL],dateStr:'',endsAt:Date.now()+3*DAY,editId:null};}
+function freshDraft(){return {text:'',image:null,button:'УЧАСТВОВАТЬ',conditions:[],places:'',pubChannels:[],dateStr:'',endsAt:Date.now()+3*DAY,editId:null};}
+function persistDraft(){ try{ if(draft && !draft.editId) sj(K_DRAFT,draft); }catch(e){} }
+function clearDraftTemp(){ localStorage.removeItem(K_DRAFT); }
 
 let cstep=1;
 function stepper(cur){
@@ -485,8 +514,8 @@ function renderCondEditors(){
     if(c.type==='sub'){
       const sugg=recent().filter(r=>!(c.channels||[]).includes(r));
       body=`<div class="chips" style="margin-bottom:8px">${(c.channels||[]).map((ch,ci)=>`<div class="chip sel">${esc(ch)} <span data-act="rm-chan:${i}:${ci}" style="margin-left:4px">✕</span></div>`).join('')}</div>
-        ${sugg.length?`<div class="chips" style="margin-bottom:8px">${sugg.map(r=>`<div class="chip" data-act="add-chanq:${i}:${r}">+ ${esc(r)}</div>`).join('')}</div>`:''}
-        <div style="display:flex;gap:8px"><input class="input" data-chan="${i}" placeholder="@username или ссылка"><button class="btn btn-ghost icon-btn btn-sm" data-act="add-chan:${i}">+</button></div>`;
+        ${sugg.length?`<div class="hint" style="margin:0 0 6px">${ico('i-clock','sm')}Недавние</div><div class="chips" style="margin-bottom:8px">${sugg.map(r=>`<div class="chip" data-act="add-chanq:${i}:${r}">${ico('i-mega','sm')}${esc(r)}</div>`).join('')}</div>`:''}
+        <div style="display:flex;gap:8px"><input class="input" data-chan="${i}" placeholder="@username или ссылка"><button class="btn btn-ghost icon-btn btn-sm" data-act="add-chan:${i}">＋</button></div>`;
     }else if(c.type==='promo'){
       body=`<input class="input" data-cond="${i}:code" value="${esc(c.code||'')}" placeholder="Промокод, напр. ESPORTS2026">`;
     }else if(c.type==='bet'){
@@ -512,7 +541,7 @@ function draftTitle(){const f=(draft.text||'').replace(/\[([^\]]+)\]\([^)]*\)/g,
 function paintConds(){const host=$('#condHost');if(host)host.innerHTML=renderCondEditors();const b=$('#condBadge');if(b&&draft)b.textContent=draft.conditions.length;}
 
 /* ---------- model update ---------- */
-function modelUpdate(key,val,node){ if(!draft)return; if(['text','button','places','dateStr'].includes(key)){ draft[key]=val; refreshPreviewLive(); } }
+function modelUpdate(key,val,node){ if(!draft)return; if(['text','button','places','dateStr'].includes(key)){ draft[key]=val; refreshPreviewLive(); persistDraft(); } }
 function refreshPreviewLive(){ const host=$('.preview'); if(host&&draft) host.outerHTML=renderPreview(); }
 
 /* ============================================================ ОБРАБОТЧИК ============================================================ */
@@ -524,13 +553,15 @@ function handle(act,arg,node){
     case 'open-win': push({name:'win',params:{id:arg}}); break;
     case 'preview': openFx({name:'giveaway',params:{id:arg}}); break;
     case 'open-manage': push({name:'manage',params:{id:arg}}); break;
-    case 'open-results': openFx({name:'results',params:{id:arg}}); break;
+    case 'open-results': winnersExpanded=false; openFx({name:'results',params:{id:arg}}); break;
+    case 'expand-win': winnersExpanded=true; render(); break;
     case 'open-analytics': openFx({name:'analytics',params:{id:arg}}); break;
     case 'cstep-next': if(validateStep(cstep)){ cstep=Math.min(4,cstep+1); render(); } break;
     case 'cstep-back': cstep=Math.max(1,cstep-1); render(); break;
     case 'open-team': push({name:'team'}); break;
+    case 'grant-open': grantSheet(); break;
     case 'rules': push({name:'rules'}); break;
-    case 'open-post': { const g=getGA(arg); const u=g&&(g.postUrl||('https://t.me/'+((g.pubChannels&&g.pubChannels[0]||'').replace('@','')))); if(u)openTg(u); ping('Открываем пост в канале'); break; }
+    case 'open-post': { const g=getGA(arg); if(g&&g.postUrl){ openTg(g.postUrl); ping('Открываем пост в канале'); } else ping('Пост появится после публикации через бота'); break; }
     case 'go-admin': setTab('admin'); break;
 
     case 'seg': mineSeg=arg; render(); break;
@@ -540,7 +571,7 @@ function handle(act,arg,node){
     case 'participate': participate(arg); break;
     case 'claim': ping('Заявка на приз отправлена'); break;
 
-    case 'create': draft=freshDraft(); cstep=1; push({name:'constructor'}); break;
+    case 'create': { const t=lj(K_DRAFT,null); draft=t||freshDraft(); cstep=1; push({name:'constructor'}); if(t)ping('Восстановлен черновик'); } break;
     case 'edit': editGiveaway(arg); break;
     case 'add-link': linkSheet(); break;
     case 'pick-image': $('#fileInput').click(); break;
@@ -558,7 +589,9 @@ function handle(act,arg,node){
 
     case 'pause': changeStatus(arg,'paused','Розыгрыш на паузе'); break;
     case 'resume': changeStatus(arg,'active','Розыгрыш возобновлён'); break;
-    case 'finish': changeStatus(arg,'finished','Розыгрыш завершён'); break;
+    case 'finish': confirmFinish(arg); break;
+    case 'delete': confirmDelete(arg); break;
+    case 'share': shareGiveaway(arg); break;
     case 'duplicate': duplicate(arg); break;
     case 'crosspost': crosspost(arg); break;
     case 'reroll': reroll(arg); break;
@@ -572,11 +605,12 @@ function handle(act,arg,node){
 
     case 'modal-close': closeSheet(); break;
   }
+  if(draft && state.stack[state.stack.length-1] && state.stack[state.stack.length-1].name==='constructor') persistDraft();
 }
 
 /* ---------- реализация ---------- */
 function toggleLink(act){ if(act==='unlink'){ sj(K_LINK,{linked:false,winlineId:''}); render(); ping('Winline отвязан'); } else openAuth(null); }
-function addCond(type){ const c=type==='sub'?{type:'sub',channels:[MAIN_CHANNEL]}:type==='promo'?{type:'promo',code:''}:{type:'bet',amount:'',category:'Все события',link:''}; draft.conditions.push(c); paintConds(); }
+function addCond(type){ const c=type==='sub'?{type:'sub',channels:[]}:type==='promo'?{type:'promo',code:''}:{type:'bet',amount:'',category:'Все события',link:''}; draft.conditions.push(c); paintConds(); }
 function addChan(i){ const inp=$(`input[data-chan="${i}"]`); if(!inp)return; const v=normChan(inp.value); if(!v)return; draft.conditions[i].channels.push(v); paintConds(); }
 function linkSheet(){
   openSheet(`<h3>Вставить ссылку</h3><p>Текст ссылки и адрес. В тексте появится кликабельная ссылка.</p>
@@ -594,10 +628,10 @@ function publish(asDraft){
     if(!draft.pubChannels.length){ping('Выберите канал публикации');return;}
   }
   const arr=GA();
-  if(draft.editId){ const g=arr.find(x=>x.id===draft.editId); if(g) Object.assign(g,buildFromDraft(g.id,g.createdAt)); setGA(arr); collectRecent(); push({name:'published',params:{msg:'Изменения сохранены.'}}); draft=null; return; }
+  if(draft.editId){ const g=arr.find(x=>x.id===draft.editId); if(g) Object.assign(g,buildFromDraft(g.id,g.createdAt)); setGA(arr); collectRecent(); clearDraftTemp(); push({name:'published',params:{msg:'Изменения сохранены.'}}); draft=null; return; }
   const id='GA-'+(2061+arr.length+Math.floor(Math.random()*40));
   const g=buildFromDraft(id,today()); g.status=asDraft?'draft':'active';
-  arr.unshift(g); setGA(arr); collectRecent();
+  arr.unshift(g); setGA(arr); collectRecent(); clearDraftTemp();
   push({name:'published',params:{msg:asDraft?'Черновик сохранён.':`Розыгрыш ушёл в ${g.pubChannels.join(', ')}.`}});
   draft=null;
 }
@@ -607,12 +641,12 @@ function buildFromDraft(id,createdAt){
   const m=(draft.dateStr||'').match(/(\d{2})\.(\d{2})\.(\d{2})\s+(\d{1,2}):(\d{2})/);
   if(m) endsAt=new Date(2000+ +m[3],+m[2]-1,+m[1],+m[4],+m[5]).getTime();
   else if(draft.dateStr==='Сейчас') endsAt=Date.now()+DAY;
-  const ch=(draft.pubChannels[0]||'').replace('@','');
   return {id,title:draftTitle(),prize:draftTitle(),prizeType:'Приз',coverLabel:draftTitle(),
     text:draft.text,image:draft.image,button:draft.button,conditions:JSON.parse(JSON.stringify(draft.conditions)),
     places:+draft.places||1,pubChannels:draft.pubChannels.slice(),
-    postUrl: ch?('https://t.me/'+ch):'', /* TODO:BACKEND - точная ссылка на пост после публикации */
-    endsAt,createdAt,status:'active',owner:'me',ownerName:'@artem'};
+    postUrl:'', /* TODO:BACKEND - реальная ссылка на пост проставляется ботом после публикации */
+    winners:[], stats:null,
+    endsAt,createdAt,status:'active',owner:'me',ownerName:tgUser().uname||''};
 }
 function editGiveaway(id){
   const g=getGA(id); if(!g)return;
@@ -621,6 +655,32 @@ function editGiveaway(id){
   draft.dateStr=dstr(g.endsAt);draft.endsAt=g.endsAt;draft.editId=id; cstep=1; push({name:'constructor'});
 }
 function changeStatus(id,st,msg){const a=GA();const g=a.find(x=>x.id===id);if(g){g.status=st;setGA(a);}ping(msg);render();}
+function confirmDelete(id){
+  const g=getGA(id); if(!g)return;
+  openSheet(`<h3>${ico('i-trash')} Удалить розыгрыш?</h3><p>«${esc(g.title)}» удалится безвозвратно вместе с участниками и итогами.</p>
+    <button class="btn btn-danger" id="delGo">${ico('i-trash')}Удалить</button>
+    <div style="height:8px"></div><button class="btn btn-ghost" data-act="modal-close">Отмена</button>`);
+  $('#delGo').onclick=()=>{ haptic('heavy'); setGA(GA().filter(x=>x.id!==id)); closeSheet(); state.tab='admin'; state.stack=[tabRoot('admin')]; render(); ping('Розыгрыш удалён'); };
+}
+function confirmFinish(id){
+  const g=getGA(id); if(!g)return;
+  openSheet(`<h3>${ico('i-stop')} Завершить досрочно?</h3><p>«${esc(g.title)}» завершится сейчас и больше не примет участников. Итоги можно будет подвести. Действие необратимо.</p>
+    <button class="btn btn-primary" id="finGo">${ico('i-stop')}Завершить</button>
+    <div style="height:8px"></div><button class="btn btn-ghost" data-act="modal-close">Отмена</button>`);
+  $('#finGo').onclick=()=>{ haptic('heavy'); closeSheet(); changeStatus(id,'finished','Розыгрыш завершён'); };
+}
+function shareGiveaway(id){
+  const g=getGA(id); if(!g)return;
+  const dl=`https://t.me/${BOT_USERNAME}/app?startapp=${encodeURIComponent(g.code||id)}`;
+  const text=`${g.title}\n\nУчаствуй в розыгрыше Winline:`;
+  openSheet(`<h3>${ico('i-link')} Поделиться розыгрышем</h3><p>Ссылка-приглашение и готовый текст для поста.</p>
+    <div class="field"><label>Ссылка</label><input class="input mono" id="shLink" value="${esc(dl)}" readonly></div>
+    <button class="btn btn-primary" id="shCopy">${ico('i-copy')}Скопировать ссылку</button>
+    <div style="height:8px"></div><button class="btn btn-ghost" id="shShare">${ico('i-share')}Открыть «Поделиться»</button>
+    <div style="height:8px"></div><button class="btn btn-ghost" data-act="modal-close">Закрыть</button>`);
+  $('#shCopy').onclick=()=>{ const inp=$('#shLink'); try{ navigator.clipboard.writeText(dl); }catch(e){ if(inp&&inp.select){inp.select();} } ping('Ссылка скопирована'); };
+  $('#shShare').onclick=()=>{ openTg(`https://t.me/share/url?url=${encodeURIComponent(dl)}&text=${encodeURIComponent(text)}`); };
+}
 function duplicate(id){const g=getGA(id);if(!g)return;draft=freshDraft();draft.text=g.text;draft.image=g.image;draft.button=g.button;
   draft.conditions=JSON.parse(JSON.stringify(g.conditions));draft.places=g.places;draft.pubChannels=g.pubChannels.slice();
   cstep=1; push({name:'constructor'});ping('Создана копия - отредактируйте и опубликуйте');}
@@ -680,7 +740,7 @@ function emptyBlock(title,desc,cta){return `<div class="empty">${ico('i-gift')}<
 /* ---------- file input ---------- */
 $('#fileInput').addEventListener('change',e=>{
   const f=e.target.files[0]; if(!f||!draft)return; const r=new FileReader();
-  r.onload=()=>{draft.image=r.result; const l=$('#upLabel'); if(l){l.textContent='Изображение выбрано'; l.closest('.upload').classList.add('has');} refreshPreviewLive();};
+  r.onload=()=>{draft.image=r.result; const l=$('#upLabel'); if(l){l.textContent='Изображение выбрано'; l.closest('.upload').classList.add('has');} refreshPreviewLive(); persistDraft();};
   r.readAsDataURL(f); e.target.value='';
 });
 

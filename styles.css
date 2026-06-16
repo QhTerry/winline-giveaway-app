@@ -388,11 +388,10 @@ body{background:#0A0A0C}
 .app{background:transparent;position:relative}
 .app::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
   background:
-    radial-gradient(600px 520px at 86% -6%, rgba(242,111,30,.34), transparent 60%),
-    radial-gradient(560px 480px at -12% 12%, rgba(242,111,30,.22), transparent 58%),
-    radial-gradient(720px 600px at 50% 120%, rgba(242,111,30,.16), transparent 62%),
-    radial-gradient(820px 640px at 42% 46%, rgba(242,111,30,.06), transparent 70%);
-  animation:bgdrift 22s ease-in-out infinite alternate}
+    radial-gradient(520px 460px at 90% -8%, rgba(242,111,30,.16), transparent 58%),
+    radial-gradient(480px 420px at -14% 12%, rgba(242,111,30,.10), transparent 56%),
+    radial-gradient(620px 520px at 50% 122%, rgba(242,111,30,.08), transparent 62%);
+  animation:bgdrift 24s ease-in-out infinite alternate}
 .view{position:relative;z-index:1}
 @keyframes bgdrift{0%{transform:translate3d(-2%,-1%,0) scale(1)}100%{transform:translate3d(2%,2%,0) scale(1.08)}}
 /* стеклянные поверхности */
@@ -425,9 +424,9 @@ body{background:#0A0A0C}
 .btn-primary{-webkit-backdrop-filter:none;backdrop-filter:none}
 
 /* компактная кнопка в пустых состояниях («Как это работает» была слишком большой) */
-.empty .btn{display:inline-flex;width:auto;max-width:none;margin:16px auto 0;padding:9px 16px;font-size:12px;
-  font-family:var(--font);font-style:normal;text-transform:none;letter-spacing:0;font-weight:700;gap:7px}
-.empty .btn .icon{width:16px;height:16px}
+.empty .btn{display:inline-flex;align-items:center;justify-content:center;width:auto;max-width:none;margin:16px auto 0;
+  padding:9px 16px;font-size:12px;line-height:1;font-family:var(--font);font-style:normal;text-transform:none;letter-spacing:0;font-weight:700;gap:7px}
+.empty .btn .icon{width:15px;height:15px;flex:0 0 auto}
 
 /* fallback если backdrop-filter не поддерживается / выключена прозрачность */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){
